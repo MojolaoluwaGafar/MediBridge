@@ -41,7 +41,6 @@ function App() {
       <Route path='/patientDashboard' element={<ProtectRoute><PatientPage /></ProtectRoute>} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/underConstruction" element={<UnderConstruction />} />
-
       
       <Route path="*" element={<Error404 />} />
 
