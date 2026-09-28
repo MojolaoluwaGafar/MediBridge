@@ -1,0 +1,43 @@
+name: Feature request
+description: Plan a small, reviewable piece of MediBridge work.
+title: "feat: "
+labels: [feature]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Goal
+      description: What user or project problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: List the expected screens, endpoints, or files.
+      placeholder: |
+        - apps/web/...
+        - apps/api/...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true before this issue can close?
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Frontend
+        - Backend
+        - Shared package
+        - Documentation
+        - DevOps
+    validations:
+      required: true

@@ -23,7 +23,6 @@ import { useDepartments } from "../../Hooks/Departments/useDepartments";
 import type { IDepartment } from "../../types/department";
 import type { ElementType } from "react";
 import BookAppointmentModal from "../PatientPageComponents/DashBoard/BookAppointmentModal";
-import { useAppointments } from "../../Hooks/Appointments/useAppointments";
 
 const departmentIcons: Record<string, ElementType> = {
   Heart,

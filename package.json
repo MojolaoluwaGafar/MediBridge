@@ -1,0 +1,23 @@
+{
+  "name": "medibridge",
+  "version": "0.1.0",
+  "description": "MediBridge monorepo: patient portal web app and Express API",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @medibridge/api\" \"npm run dev -w @medibridge/web\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev:api": "npm run dev -w @medibridge/api",
+    "dev:web": "npm run dev -w @medibridge/web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  },
+  "license": "ISC"
+}
