@@ -1,6 +1,6 @@
 # API contract
 
-The API lives in `apps/api` and is mounted under `/api`. The web app reads the
+The API lives in `apps/Server` and is mounted under `/api`. The Client app reads the
 server origin from `VITE_BASE_URL` and prefixes every request with `/api`.
 
 Authenticated routes expect `Authorization: Bearer <token>`. Tokens are issued

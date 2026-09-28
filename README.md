@@ -9,12 +9,12 @@ monorepo with a Vite React frontend and a TypeScript Express API.
 
 ```text
 apps/
-  web/                 Vite + React 19 + Tailwind frontend (@medibridge/web)
-  api/                 TypeScript Express + MongoDB API (@medibridge/api)
+  Client/              Vite + React 19 + Tailwind frontend (@medibridge/client)
+  Server/              TypeScript Express + MongoDB API (@medibridge/server)
     src/               Routes, controllers, models, services, seeds
     assets/            Images uploaded by the seed scripts
 packages/
-  shared/              Types shared by web and api (@medibridge/shared)
+  shared/              Types shared by Client and Server (@medibridge/shared)
 docs/
   architecture/        System and API decisions
   collaboration/       Team workflow and ownership
@@ -25,37 +25,37 @@ docs/
 
 ```powershell
 npm install
-copy apps\api\.env.example apps\api\.env   # then fill in the values
-copy apps\web\.env.example apps\web\.env
+copy apps\Server\.env.example apps\Server\.env   # then fill in the values
+copy apps\Client\.env.example apps\Client\.env
 npm run dev
 ```
 
 `npm install` must be run from the repository root; it installs every workspace
 into a single `node_modules` and `package-lock.json`.
 
-| Command                 | What it does                                 |
-| ----------------------- | -------------------------------------------- |
-| `npm run dev`           | Runs the API and the web app together        |
-| `npm run dev:api`       | Runs only the API (nodemon + ts-node)        |
-| `npm run dev:web`       | Runs only the web app (Vite)                 |
-| `npm run typecheck`     | Type checks every workspace                  |
-| `npm run build`         | Builds every workspace                       |
-| `npm run lint`          | Lints every workspace that has a lint script |
+| Command               | What it does                                 |
+| --------------------- | -------------------------------------------- |
+| `npm run dev`         | Runs the Server and the Client together      |
+| `npm run dev:server`  | Runs only the Server (nodemon + ts-node)     |
+| `npm run dev:client`  | Runs only the Client (Vite)                  |
+| `npm run typecheck`   | Type checks every workspace                  |
+| `npm run build`       | Builds every workspace                       |
+| `npm run lint`        | Lints every workspace that has a lint script |
 
-Seed the database from the API workspace:
+Seed the database from the Server workspace:
 
 ```powershell
-npm run seed:users -w @medibridge/api
-npm run seed:doctors -w @medibridge/api
-npm run seed:departments -w @medibridge/api
+npm run seed:users -w @medibridge/server
+npm run seed:doctors -w @medibridge/server
+npm run seed:departments -w @medibridge/server
 ```
 
 ## Deployment
 
-| App        | Platform | Root directory | Build              | Start / output         |
-| ---------- | -------- | -------------- | ------------------ | ---------------------- |
-| `apps/web` | Vercel   | `apps/web`     | `npm run build`    | `dist`                 |
-| `apps/api` | Render   | `apps/api`     | `npm run build`    | `npm start`            |
+| App           | Platform | Root directory | Build           | Start / output |
+| ------------- | -------- | -------------- | --------------- | -------------- |
+| `apps/Client` | Vercel   | `apps/Client`  | `npm run build` | `dist`         |
+| `apps/Server` | Render   | `apps/Server`  | `npm run build` | `npm start`    |
 
 ## Git workflow
 

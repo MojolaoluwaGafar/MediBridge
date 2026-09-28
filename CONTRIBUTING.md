@@ -7,7 +7,7 @@ to `main`.
 
 1. Clone the repository.
 2. Run `npm install` in the repository root.
-3. Copy `apps/api/.env.example` and `apps/web/.env.example` to `.env` and fill
+3. Copy `apps/Server/.env.example` and `apps/Client/.env.example` to `.env` and fill
    in the values.
 4. Run `npm run typecheck` and `npm run build` before starting work.
 5. Read the relevant architecture document in `docs/architecture/`.
@@ -35,8 +35,8 @@ to `main`.
 5. Commit using a clear prefix:
 
    ```text
-   feat(api): add doctor appointment endpoints
-   fix(web): prevent double booking submission
+   feat(server): add doctor appointment endpoints
+   fix(client): prevent double booking submission
    docs: document appointment statuses
    chore: update development setup
    ```
@@ -61,8 +61,8 @@ to `main`.
 
 | Work type                                          | Location    |
 | -------------------------------------------------- | ----------- |
-| Browser UI and client API calls                    | `apps/web/` |
-| HTTP routes, services, validation, and persistence | `apps/api/` |
+| Browser UI and client API calls                    | `apps/Client/` |
+| HTTP routes, services, validation, and persistence | `apps/Server/` |
 | Code reused by at least two apps                   | `packages/` |
 | Product and technical decisions                    | `docs/`     |
 | Repository automation                              | `.github/`  |

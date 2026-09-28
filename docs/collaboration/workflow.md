@@ -7,8 +7,8 @@ branch, and one pull request.
 
 | Area       | Responsibility                                           | Collaborates with |
 | ---------- | -------------------------------------------------------- | ----------------- |
-| `apps/web` | UI, accessibility, client-side state, API integration    | API team          |
-| `apps/api` | Routes, services, validation, authorization, data access | Frontend team     |
+| `apps/Client` | UI, accessibility, client-side state, API integration    | Server team       |
+| `apps/Server` | Routes, services, validation, authorization, data access | Client team       |
 | `packages` | Shared types and utilities                               | Both teams        |
 | `docs`     | Requirements, architecture, handoff notes                | Everyone          |
 
