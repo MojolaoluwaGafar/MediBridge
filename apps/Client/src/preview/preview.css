@@ -1,0 +1,12 @@
+/* The parts of App.css the portal screens use, without the landing-page
+   background photos (which would add ~25 MB to the preview build). */
+@import url('https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
+
+.fontLibre {
+  font-family: "Abhaya Libre", serif;
+}
+.fontOutfit {
+  font-family: "Outfit", sans-serif;
+}

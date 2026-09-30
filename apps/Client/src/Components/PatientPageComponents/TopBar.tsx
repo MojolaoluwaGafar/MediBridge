@@ -15,6 +15,9 @@ type Props = {
   isUserMenuOpen: boolean;
   setIsUserMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onLogout: () => void;
+  // Tabs that show a heading instead of the search box. Defaults to Dashboard.
+  pageTitles?: Record<string, string>;
+  searchPlaceholder?: string;
 };
 
 export default function Topbar({
@@ -27,6 +30,8 @@ export default function Topbar({
   onLogout,
   searchTerm,
   setSearchTerm,
+  pageTitles = { dashboard: "Dashboard" },
+  searchPlaceholder = "Search condition, department...",
 }: Props) {
   const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm ?? "");
 
@@ -35,13 +40,16 @@ export default function Topbar({
   }, [searchTerm]);
 
   const renderTitle = () => {
+    const pageTitle = pageTitles[activeTab];
+    if (pageTitle) {
+      return (
+        <p className="text-xl sm:text-2xl lg:text-[28px] font-medium fontOutfit">
+          {pageTitle}
+        </p>
+      );
+    }
+
     switch (activeTab) {
-      case "dashboard":
-        return (
-          <p className="text-xl sm:text-2xl lg:text-[28px] font-medium fontOutfit">
-            Dashboard
-          </p>
-        );
       case "settings":
         return (
           <p className="text-base sm:text-lg">
@@ -61,7 +69,7 @@ export default function Topbar({
                 setLocalSearchTerm(value);
                 setSearchTerm?.(value);
               }}
-              placeholder="Search condition, department..."
+              placeholder={searchPlaceholder}
               className="h-11 w-full rounded-lg border border-[#E7E4E4] pl-10 pr-4 text-sm focus:outline-none"
             />
           </div>

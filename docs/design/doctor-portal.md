@@ -230,3 +230,22 @@ so design and API stay in step. The API itself is documented in
   - `POST /api/appointment/:id/notes`: visit notes (new model)
 - **Records.** No medical-records model exists yet, so the Shared records card
   is design-only until one is added.
+
+## Built screens (preview)
+
+The doctor and admin screens are built in React from the patient portal's own
+components (`Topbar`, `Sidebar`, `DashboardGreeting`, `Tabs`, `Button`,
+`EmptyAppointmentState` and the appointment card styles), in
+`apps/Client/src/Components/DoctorPageComponents`,
+`apps/Client/src/Components/AdminPageComponents` and
+`apps/Client/src/Components/PortalComponents`.
+
+To see them with sample data, run `npm run dev:client` and open
+`http://localhost:5173/preview.html`. The preview is only served in
+development. To bring the screens into Figma, open that page in Chrome at
+1520px or wider and capture it with the html.to.design extension.
+
+The components take their data as props. They are not wired to the API or
+added to the app's routes yet, because the doctor and admin endpoints they
+need (a doctor's appointments, patient details, flags and doctor accounts)
+are still to be built. `/api/flags` already exists.
