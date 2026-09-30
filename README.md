@@ -55,7 +55,13 @@ npm run seed:departments -w @medibridge/server
 | App           | Platform | Root directory | Build           | Start / output |
 | ------------- | -------- | -------------- | --------------- | -------------- |
 | `apps/Client` | Vercel   | `apps/Client`  | `npm run build` | `dist`         |
-| `apps/Server` | Render   | `apps/Server`  | `npm run build` | `npm start`    |
+| `apps/Server` | Render   | repo root      | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
+
+The Server is defined as a Render Blueprint in [`render.yaml`](./render.yaml).
+In Render, choose **New → Blueprint** and pick this repository. Render asks for
+the secret values (database URL, API keys) on the first deploy, and then
+deploys `main` automatically once CI passes. The Server builds from the repo
+root because the workspaces share one `package-lock.json`.
 
 ## Git workflow
 

@@ -1,0 +1,72 @@
+# Render Blueprint for the MediBridge API (apps/Server).
+# The Client stays on Vercel (see README). Set VITE_BASE_URL there to this
+# service's URL, and add the Vercel URL to CORS_ORIGINS here if it isn't covered.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repository.
+# Render asks for every "sync: false" value on the first deploy.
+
+services:
+  - type: web
+    name: medibridge-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    # Deploy only after the CI workflow passes on main.
+    autoDeployTrigger: checksPass
+    # The repo is an npm workspace with one lockfile at the root, so install
+    # and build from the root. --include=dev keeps TypeScript available even
+    # though NODE_ENV is production.
+    buildCommand: npm ci --include=dev && npm run build -w @medibridge/server
+    startCommand: npm run start -w @medibridge/server
+    healthCheckPath: /
+    # Skip deploys for changes that can't affect the API.
+    buildFilter:
+      paths:
+        - apps/Server/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+
+      # Database
+      - key: DB_CONNECTION_URL
+        sync: false
+
+      # Auth. Generated once by Render; changing it signs everyone out.
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # Extra allowed browser origins, comma separated. The production Vercel
+      # URLs and *.vercel.app are already allowed in code.
+      - key: CORS_ORIGINS
+        sync: false
+
+      # AI (see docs/architecture/ai.md)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_TRIAGE_MODEL
+        value: llama-3.1-8b-instant
+      - key: HOSPITAL_EMERGENCY_NUMBER
+        sync: false
+
+      # Email. In production only Brevo is used; SMTP is skipped.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+
+      # Cloudinary (image uploads and seed scripts)
+      - key: CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

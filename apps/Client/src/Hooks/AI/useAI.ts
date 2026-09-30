@@ -2,17 +2,21 @@ import { useMemo, useState } from "react";
 import { useApiMutation } from "../Api/useApiMutation";
 import { aiService } from "../../API/services/AIService";
 import { useAuth } from "../Auth/useAuth";
+import type { UrgencyLevel } from "../../types/apiReqRes";
 
 export interface ChatMessage {
   id: string;
   sender: "user" | "ai";
   text: string;
+  urgency?: UrgencyLevel;
 }
 
 export function useAI() {
   const { user } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Lets the server keep the conversation's history and link safety flags to it.
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const welcomeMessage = useMemo<ChatMessage | null>(() => {
     const name = user?.firstname || "there";
@@ -47,12 +51,15 @@ export function useAI() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      const response = await mutate({ message });
+      const response = await mutate({ message, sessionId });
+
+      setSessionId(response.sessionId);
 
       const aiMessage: ChatMessage = {
         id: crypto.randomUUID(),
         sender: "ai",
         text: response.reply,
+        urgency: response.urgency,
       };
 
       setMessages((prev) => [...prev, aiMessage]);
@@ -63,7 +70,10 @@ export function useAI() {
     }
   };
 
-  const clearChat = ()=> setMessages([]);
+  const clearChat = ()=> {
+    setMessages([]);
+    setSessionId(null);
+  };
 
   return {
     messages : displayedMessages,

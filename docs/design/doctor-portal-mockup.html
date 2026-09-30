@@ -1,0 +1,584 @@
+<title>MediBridge Doctor Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@500;600;700&family=Outfit:wght@300;400;500;600&display=swap">
+<style>
+/* Layout: 1440-wide app frames (264 sidebar + fluid main) stacked vertically, one per screen; below 1024 the sidebar folds into a top strip.
+   Single light theme on purpose: this page mirrors the Figma file for import, so every color is set explicitly. */
+:root{
+  --green-900:#27463F;   /* sidebar */
+  --green-700:#2D5A50;   /* primary buttons, links */
+  --green-100:#E3F2EE;   /* mint chips, icon tiles */
+  --ink:#141B19;
+  --ink-2:#4D5856;       /* secondary text */
+  --ink-3:#7C8785;       /* captions */
+  --line:#E3E9E7;
+  --surface:#FFFFFF;
+  --canvas:#EEF1F0;      /* space around frames */
+  --page:#FAFBFB;        /* app background */
+  --amber-bg:#FDF1D8; --amber:#8A5A0B;
+  --red-bg:#FCE8E6;   --red:#B3261E;
+  --blue-bg:#E6EEFB;  --blue:#2350A0;
+  --display:"Abhaya Libre", Georgia, "Times New Roman", serif;
+  --body:"Outfit", "Segoe UI", system-ui, sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;padding:32px 16px 64px}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--green-700);outline-offset:2px}
+
+/* Board chrome (not part of the design) */
+.board-head{max-width:1440px;margin:0 auto 20px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:baseline;justify-content:space-between}
+.board-head h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0}
+.board-head p{margin:0;color:var(--ink-2);max-width:62ch}
+.jump{display:flex;gap:8px;flex-wrap:wrap}
+.jump a{color:var(--green-700);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;text-decoration:none;font-weight:500}
+.frame-label{max-width:1440px;margin:40px auto 10px;color:var(--ink-3);font-size:13px;letter-spacing:.02em}
+.frame-label b{color:var(--ink-2);font-weight:500}
+
+/* App frame */
+.app{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:264px minmax(0,1fr);background:var(--page);border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(20,27,25,.06),0 8px 28px rgba(20,27,25,.06)}
+.side{background:var(--green-900);color:#DCE8E4;padding:28px 20px;display:flex;flex-direction:column;gap:6px;min-height:100%}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:var(--display);font-weight:600;font-size:24px;margin-bottom:24px}
+.logo span.mark{width:32px;height:32px;border-radius:8px;background:#fff;color:var(--green-900);display:grid;place-items:center}
+.side .eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9DBAB2;margin:0 0 6px 4px}
+.nav{display:flex;align-items:center;gap:12px;height:44px;padding:0 14px;border-radius:8px;color:#DCE8E4;font-size:14px;border:0;background:none;text-align:left;width:100%}
+.nav.active{background:#fff;color:var(--green-900);font-weight:500}
+.nav .count{margin-left:auto;background:#E4574B;color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;font-weight:500}
+.side .spacer{flex:1}
+
+.main{padding:28px 40px 40px;display:flex;flex-direction:column;gap:28px;min-width:0}
+.top{display:flex;align-items:center;gap:16px}
+.search{flex:0 1 330px;display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink-3)}
+.top .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.bell{position:relative;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--ink-2)}
+.bell::after{content:"";position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:#E4574B;border:1.5px solid #fff}
+.me{display:flex;align-items:center;gap:10px}
+.me small{display:block;color:var(--ink-3);font-size:12px}
+.me strong{font-weight:500;font-size:14px}
+
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:500;flex:none;background:var(--green-100);color:var(--green-700)}
+.av.lg{width:72px;height:72px;font-size:24px}
+.av.b{background:#E7ECFA;color:#35519A}.av.a{background:#FBEEDC;color:#8A5A0B}.av.r{background:#FBE7E4;color:#9C3A2F}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;background:var(--green-100);color:var(--green-700)}
+.chip.amber{background:var(--amber-bg);color:var(--amber)}
+.chip.red{background:var(--red-bg);color:var(--red)}
+.chip.blue{background:var(--blue-bg);color:var(--blue)}
+.chip.grey{background:#EEF1F0;color:var(--ink-2)}
+.chip.id{background:#F1F3F2;color:var(--ink-2);font-weight:400;font-variant-numeric:tabular-nums}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid var(--green-700);background:var(--green-700);color:#fff;white-space:nowrap}
+.btn.sm{height:34px;padding:0 12px;font-size:13px}
+.btn.ghost{background:var(--surface);color:var(--green-700);border-color:#C9D6D2}
+.btn.danger{background:var(--surface);color:var(--red);border-color:#EBC9C5}
+.btn svg.i{width:16px;height:16px}
+
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.head h2{font-family:var(--display);font-weight:600;font-size:40px;line-height:1.05;margin:10px 0 6px;text-wrap:balance}
+.head p{margin:0;color:var(--ink-2);font-size:15px}
+.head .actions{display:flex;gap:12px;flex-wrap:wrap}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.card-h{display:flex;align-items:center;gap:10px;padding:20px 22px 12px}
+.card-h h3{font-family:var(--display);font-weight:600;font-size:24px;margin:0}
+.card-h .link{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--green-700);font-weight:500;font-size:13px;text-decoration:none}
+.card-h .link svg.i{width:15px;height:15px}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.stat{padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.stat .row{display:flex;justify-content:space-between;align-items:center;color:var(--ink-2);font-size:13px}
+.tile{width:34px;height:34px;border-radius:8px;background:var(--green-100);color:var(--green-700);display:grid;place-items:center}
+.tile svg.i{width:17px;height:17px}
+.stat .num{font-size:34px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums}
+.stat .sub{font-size:12px;color:var(--ink-3)}
+.stat .sub.up{color:var(--green-700)} .stat .sub.warn{color:var(--red)}
+
+.cols{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:24px;align-items:start}
+.stack{display:flex;flex-direction:column;gap:24px;min-width:0}
+
+/* Schedule */
+.sched{list-style:none;margin:0;padding:0 22px 8px}
+.slot{display:grid;grid-template-columns:64px 40px minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 0;border-top:1px solid var(--line);position:relative}
+.slot .time{font-variant-numeric:tabular-nums;line-height:1.25}
+.slot .time b{display:block;font-weight:500;font-size:14px}
+.slot .time span{color:var(--ink-3);font-size:12px}
+.slot.next::before{content:"";position:absolute;left:-22px;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:var(--green-700)}
+.who{min-width:0;display:flex;flex-direction:column;gap:3px}
+.who .name{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.who .name strong{font-weight:500;font-size:15px}
+.who .reason{color:var(--ink-2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who .meta{display:flex;align-items:center;gap:6px;color:var(--ink-3);font-size:12px}
+.who .meta svg.i{width:13px;height:13px}
+.who .meta.warn{color:var(--amber)}
+.who .meta.ok{color:var(--green-700)}
+
+/* Requests */
+.reqs{display:flex;flex-direction:column;padding:0 22px 20px;gap:0}
+.req{padding:16px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.req .top-row{display:flex;gap:12px;align-items:center}
+.req .when{display:flex;gap:14px;color:var(--ink-2);font-size:12.5px;flex-wrap:wrap}
+.req .when span{display:inline-flex;gap:5px;align-items:center}
+.req .when svg.i{width:14px;height:14px}
+.req p{margin:0;color:var(--ink-2);font-size:13px}
+.req .btns{display:flex;gap:8px;margin-top:4px}
+.req .btns .btn{flex:1}
+
+.flag{margin:0 22px 20px;padding:14px;border-radius:10px;background:var(--red-bg);display:flex;gap:12px;color:var(--ink)}
+.flag svg.i{color:var(--red);margin-top:2px}
+.flag p{margin:2px 0 8px;color:var(--ink-2);font-size:13px}
+.flag a{color:var(--red);font-weight:500;font-size:13px;text-decoration:none}
+
+.activity{list-style:none;margin:0;padding:0 22px 12px}
+.activity li{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-2)}
+.activity li b{color:var(--ink);font-weight:500}
+.activity time{margin-left:auto;color:var(--ink-3);font-size:12px;white-space:nowrap}
+
+/* Patient profile */
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--green-700);font-weight:500;text-decoration:none;font-size:14px}
+.back svg.i{width:16px;height:16px}
+.phead{padding:22px 24px;display:flex;flex-wrap:wrap;gap:20px;align-items:center}
+.phead .id{flex:1;min-width:260px;display:flex;flex-direction:column;gap:6px}
+.phead h2{font-family:var(--display);font-weight:600;font-size:34px;margin:0;line-height:1}
+.facts{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--ink-2);font-size:13.5px}
+.facts span{white-space:nowrap}
+.facts .muted{color:var(--ink-3)}
+.phead .nextv{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.phead .nextv small{color:var(--ink-3);font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.phead .nextv b{font-weight:500;font-size:15px}
+.phead .nextv .row{display:flex;gap:10px}
+
+.tabs{display:flex;gap:28px;border-bottom:1px solid var(--line)}
+.tabs span{padding:0 2px 12px;color:var(--ink-3);font-weight:500;position:relative}
+.tabs span.on{color:var(--green-700)}
+.tabs span.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--green-700)}
+
+.body-p{padding:0 22px 22px;color:var(--ink-2);display:flex;flex-direction:column;gap:14px}
+.body-p blockquote{margin:0;padding:14px 16px;border-radius:10px;background:#F4F7F6;color:var(--ink);font-size:15px;line-height:1.5}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kv div{display:flex;flex-direction:column;gap:2px}
+.kv small{color:var(--ink-3);font-size:12px}
+.kv b{font-weight:500;color:var(--ink)}
+
+.vitals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 22px 22px}
+.vital{border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.vital small{color:var(--ink-3);font-size:12px}
+.vital b{font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.vital b em{font-style:normal;font-size:12px;color:var(--ink-3);font-weight:400;margin-left:3px}
+.vital .t{font-size:12px}
+.vital .t.warn{color:var(--amber)} .vital .t.ok{color:var(--green-700)}
+
+.tbl-wrap{overflow-x:auto;padding:0 22px 16px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:480px}
+th{text-align:left;color:var(--ink-3);font-weight:400;font-size:12px;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+td{padding:12px 10px 12px 0;border-bottom:1px solid var(--line);color:var(--ink-2);font-variant-numeric:tabular-nums}
+td:first-child{color:var(--ink);font-weight:500}
+tr:last-child td{border-bottom:0}
+
+.recs{list-style:none;margin:0;padding:0 22px 16px}
+.recs li{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.recs li div{flex:1;min-width:0;display:flex;flex-direction:column}
+.recs li b{font-weight:500}
+.recs li small{color:var(--ink-3);font-size:12px}
+.recs a{color:var(--green-700);font-weight:500;font-size:13px;text-decoration:none}
+.locked{padding:8px 22px 24px;display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.locked .tile{background:#EEF1F0;color:var(--ink-2);width:44px;height:44px}
+.locked b{font-weight:500;font-size:16px}
+.locked p{margin:0;color:var(--ink-2);font-size:13.5px}
+
+.notes{padding:0 22px 20px;display:flex;flex-direction:column;gap:12px}
+.notes textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:12px;font:inherit;color:var(--ink);background:var(--surface)}
+.notes .row{display:flex;justify-content:flex-end}
+.note{border-top:1px solid var(--line);padding-top:12px;font-size:13.5px;color:var(--ink-2)}
+.note small{display:block;color:var(--ink-3);font-size:12px;margin-bottom:4px}
+
+/* States board */
+.states{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start}
+.state-cap{color:var(--ink-3);font-size:12px;margin:0 0 8px}
+.empty{padding:36px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty .tile{width:48px;height:48px}
+.empty b{font-size:17px;font-weight:500}
+.empty p{margin:0;color:var(--ink-2);max-width:34ch}
+.modal{padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgba(20,27,25,.16)}
+.modal h3{font-family:var(--display);font-weight:600;font-size:26px;margin:0}
+.modal p{margin:0;color:var(--ink-2)}
+.modal label{font-weight:500;font-size:13px;display:flex;flex-direction:column;gap:6px}
+.modal label span{color:var(--ink-3);font-weight:400}
+.modal textarea{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font:inherit;min-height:84px;resize:vertical}
+.modal .row{display:flex;gap:10px;justify-content:flex-end}
+
+/* Narrow widths */
+@media (max-width:1180px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .states{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:1024px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;padding:14px 16px;gap:4px}
+  .side .logo{margin:0 12px 0 0;font-size:20px}
+  .side .eyebrow,.side .spacer{display:none}
+  .nav{width:auto;height:38px;padding:0 10px}
+  .nav .label{display:none}
+  .nav.active .label{display:inline}
+  .main{padding:20px 16px 28px}
+  .me div{display:none}
+}
+@media (max-width:640px){
+  body{padding-block:20px 40px}
+  .search{flex:1}
+  .head h2{font-size:32px}
+  .stats{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+  .stat .num{font-size:28px}
+  .slot{grid-template-columns:52px minmax(0,1fr);row-gap:10px}
+  .slot .av{display:none}
+  .slot .btn{grid-column:2;justify-self:start}
+  .kv,.vitals{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .phead .nextv{align-items:flex-start}
+  .card-h h3{font-size:21px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="board-head">
+  <div>
+    <h1>MediBridge · Doctor portal</h1>
+    <p>Mockups for the Doctor &amp; Admin Portal page in Figma. Everything here uses sample data. Open this page in Chrome at 1440px or wider and capture it with html.to.design.</p>
+  </div>
+  <nav class="jump" aria-label="Screens">
+    <a href="#dashboard">Dashboard</a>
+    <a href="#profile">Patient profile</a>
+    <a href="#states">States</a>
+  </nav>
+</header>
+
+<!-- ============ SCREEN 1: DASHBOARD ============ -->
+<p class="frame-label" id="dashboard"><b>Doctor · Dashboard</b> · 1440</p>
+<section class="app" aria-label="Doctor dashboard">
+  <aside class="side">
+    <div class="logo"><span class="mark"><i data-i="plus-box"></i></span>MediBridge</div>
+    <p class="eyebrow">Clinical</p>
+    <button class="nav active"><i data-i="grid"></i><span class="label">Dashboard</span></button>
+    <button class="nav"><i data-i="calendar"></i><span class="label">Appointments</span></button>
+    <button class="nav"><i data-i="users"></i><span class="label">My Patients</span></button>
+    <button class="nav"><i data-i="message"></i><span class="label">Messages</span><span class="count">5</span></button>
+    <button class="nav"><i data-i="shield"></i><span class="label">AI Support Flags</span><span class="count">1</span></button>
+    <button class="nav"><i data-i="sun"></i><span class="label">Profile &amp; Settings</span></button>
+    <div class="spacer"></div>
+    <button class="nav"><i data-i="logout"></i><span class="label">Log out</span></button>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="search"><i data-i="search"></i>Search patients by name or Patient ID</div>
+      <div class="right">
+        <span class="bell"><i data-i="bell"></i></span>
+        <div class="me"><span class="av">SA</span><div><strong>Dr. Sarah Al-Mansoor</strong><small>Cardiology</small></div><i data-i="chev"></i></div>
+      </div>
+    </div>
+
+    <div class="head">
+      <div>
+        <span class="chip"><span class="dot"></span>On duty · In-clinic today</span>
+        <h2>Good morning, Dr. Sarah</h2>
+        <p>Thursday, 24 October · You have 12 appointments today</p>
+      </div>
+      <div class="actions">
+        <button class="btn ghost"><i data-i="clock"></i>Set availability</button>
+        <button class="btn"><i data-i="play"></i>Start next consultation</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="card stat"><div class="row">Today's appointments<span class="tile"><i data-i="calendar"></i></span></div><div class="num">12</div><div class="sub">4 completed · 8 remaining</div></div>
+      <div class="card stat"><div class="row">Pending requests<span class="tile"><i data-i="hourglass"></i></span></div><div class="num">3</div><div><span class="chip amber">Needs your review</span></div></div>
+      <div class="card stat"><div class="row">Patients seen this week<span class="tile"><i data-i="users"></i></span></div><div class="num">48</div><div class="sub up">+12% vs last week</div></div>
+      <div class="card stat"><div class="row">Unread messages<span class="tile"><i data-i="message"></i></span></div><div class="num">5</div><div class="sub warn">2 urgent</div></div>
+    </div>
+
+    <div class="cols">
+      <div class="stack">
+        <section class="card">
+          <div class="card-h"><h3>Today's schedule</h3><span class="chip">8 upcoming</span><a class="link" href="#dashboard">Full agenda <i data-i="arrow-r"></i></a></div>
+          <ol class="sched">
+            <li class="slot next">
+              <div class="time"><b>09:00</b><span>– 09:30</span></div>
+              <span class="av">MV</span>
+              <div class="who">
+                <div class="name"><strong>Marcus Vance</strong><span class="chip id">MB-84092</span><span class="chip blue">Next</span></div>
+                <div class="reason">Recurring migraine with visual aura for 3 weeks</div>
+                <div class="meta"><i data-i="video"></i>Video consultation</div>
+              </div>
+              <button class="btn sm"><i data-i="play"></i>Start consultation</button>
+            </li>
+            <li class="slot">
+              <div class="time"><b>10:15</b><span>– 10:45</span></div>
+              <span class="av b">ER</span>
+              <div class="who">
+                <div class="name"><strong>Elena Rostova</strong><span class="chip id">MB-72109</span><span class="chip">Checked in</span></div>
+                <div class="reason">Blood pressure check and ECG review</div>
+                <div class="meta ok"><i data-i="clock"></i>Arrived · in waiting area</div>
+              </div>
+              <button class="btn sm"><i data-i="play"></i>Start consultation</button>
+            </li>
+            <li class="slot">
+              <div class="time"><b>11:30</b><span>– 12:00</span></div>
+              <span class="av a">DC</span>
+              <div class="who">
+                <div class="name"><strong>David Chen</strong><span class="chip id">MB-30911</span><span class="chip">Confirmed</span></div>
+                <div class="reason">Lab results review (lipid &amp; kidney panel)</div>
+                <div class="meta ok"><i data-i="flask"></i>Lab results ready</div>
+              </div>
+              <button class="btn sm ghost"><i data-i="file"></i>View chart</button>
+            </li>
+            <li class="slot">
+              <div class="time"><b>14:00</b><span>– 14:30</span></div>
+              <span class="av r">AO</span>
+              <div class="who">
+                <div class="name"><strong>Amara Okafor</strong><span class="chip id">MB-65301</span><span class="chip amber">Pending</span></div>
+                <div class="reason">Post-surgery recovery check</div>
+                <div class="meta warn"><i data-i="alert"></i>Intake form not completed</div>
+              </div>
+              <button class="btn sm ghost"><i data-i="file"></i>Review intake</button>
+            </li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <div class="card-h"><h3>Recent activity</h3><a class="link" href="#dashboard">View all <i data-i="arrow-r"></i></a></div>
+          <ul class="activity">
+            <li><span class="tile"><i data-i="check"></i></span><span>You confirmed <b>David Chen's</b> appointment for 24 Oct, 11:30.</span><time>2h ago</time></li>
+            <li><span class="tile"><i data-i="calendar"></i></span><span><b>Elena Rostova</b> rescheduled to 24 Oct, 10:15.</span><time>Yesterday</time></li>
+            <li><span class="tile"><i data-i="file"></i></span><span><b>Elena Rostova</b> shared her medical records with you.</span><time>Yesterday</time></li>
+          </ul>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="card">
+          <div class="card-h"><h3>Pending requests</h3><span class="chip amber">3</span></div>
+          <div class="reqs">
+            <article class="req">
+              <div class="top-row"><span class="av">JO</span><div><strong style="font-weight:500">James Owusu</strong><div class="when"><span><i data-i="calendar"></i>Fri, 25 Oct</span><span><i data-i="clock"></i>09:30</span></div></div></div>
+              <p>Shortness of breath when climbing stairs, getting worse over two weeks.</p>
+              <div><span class="chip"><i data-i="file"></i>Records shared</span></div>
+              <div class="btns"><button class="btn sm"><i data-i="check"></i>Confirm</button><button class="btn sm danger"><i data-i="x"></i>Decline</button></div>
+            </article>
+            <article class="req">
+              <div class="top-row"><span class="av b">LP</span><div><strong style="font-weight:500">Lina Park</strong><div class="when"><span><i data-i="calendar"></i>Fri, 25 Oct</span><span><i data-i="clock"></i>13:00</span></div></div></div>
+              <p>Follow-up after starting new blood pressure medication.</p>
+              <div class="btns"><button class="btn sm"><i data-i="check"></i>Confirm</button><button class="btn sm danger"><i data-i="x"></i>Decline</button></div>
+            </article>
+            <article class="req">
+              <div class="top-row"><span class="av a">TB</span><div><strong style="font-weight:500">Tunde Bakare</strong><div class="when"><span><i data-i="calendar"></i>Mon, 28 Oct</span><span><i data-i="clock"></i>10:00</span></div></div></div>
+              <p>Palpitations at night, no chest pain.</p>
+              <div class="btns"><button class="btn sm"><i data-i="check"></i>Confirm</button><button class="btn sm danger"><i data-i="x"></i>Decline</button></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-h"><h3>AI support flags</h3><span class="chip red">1 new</span></div>
+          <div class="flag">
+            <i data-i="alert"></i>
+            <div>
+              <strong style="font-weight:500">Possible emergency in a support chat</strong>
+              <p>"I've had crushing chest pain for 20 minutes." The assistant told the patient to call emergency services. 08:42 today.</p>
+              <a href="#dashboard">Review chat</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 2: PATIENT PROFILE ============ -->
+<p class="frame-label" id="profile"><b>Doctor · Patient profile</b> · 1440 · records shared</p>
+<section class="app" aria-label="Patient profile">
+  <aside class="side">
+    <div class="logo"><span class="mark"><i data-i="plus-box"></i></span>MediBridge</div>
+    <p class="eyebrow">Clinical</p>
+    <button class="nav"><i data-i="grid"></i><span class="label">Dashboard</span></button>
+    <button class="nav"><i data-i="calendar"></i><span class="label">Appointments</span></button>
+    <button class="nav active"><i data-i="users"></i><span class="label">My Patients</span></button>
+    <button class="nav"><i data-i="message"></i><span class="label">Messages</span><span class="count">5</span></button>
+    <button class="nav"><i data-i="shield"></i><span class="label">AI Support Flags</span><span class="count">1</span></button>
+    <button class="nav"><i data-i="sun"></i><span class="label">Profile &amp; Settings</span></button>
+    <div class="spacer"></div>
+    <button class="nav"><i data-i="logout"></i><span class="label">Log out</span></button>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="search"><i data-i="search"></i>Search patients by name or Patient ID</div>
+      <div class="right">
+        <span class="bell"><i data-i="bell"></i></span>
+        <div class="me"><span class="av">SA</span><div><strong>Dr. Sarah Al-Mansoor</strong><small>Cardiology</small></div><i data-i="chev"></i></div>
+      </div>
+    </div>
+
+    <a class="back" href="#dashboard"><i data-i="arrow-l"></i>Back to dashboard</a>
+
+    <section class="card phead">
+      <span class="av b lg">ER</span>
+      <div class="id">
+        <h2>Elena Rostova</h2>
+        <div class="facts">
+          <span>Patient ID <b style="font-weight:500">MB-72109</b></span>
+          <span>Female · 52 yrs</span>
+          <span>+1 (415) 555-0142</span>
+          <span>elena.rostova@example.com</span>
+        </div>
+        <div><span class="chip">Patient since March 2024</span></div>
+      </div>
+      <div class="nextv">
+        <small>Next visit</small>
+        <b>Today, 10:15 · Checked in</b>
+        <div class="row"><button class="btn ghost"><i data-i="message"></i>Message</button><button class="btn"><i data-i="play"></i>Start consultation</button></div>
+      </div>
+    </section>
+
+    <div class="tabs" role="tablist"><span class="on">Overview</span><span>Appointments</span><span>Records</span><span>Notes</span></div>
+
+    <div class="cols">
+      <div class="stack">
+        <section class="card">
+          <div class="card-h"><h3>Reason for this visit</h3></div>
+          <div class="body-p">
+            <blockquote>"My blood pressure readings at home have been around 150/95 for the last two weeks, and I feel light-headed in the mornings. I'd like my ECG from last month reviewed."</blockquote>
+            <div class="kv">
+              <div><small>Booked for</small><b>Thu, 24 Oct · 10:15</b></div>
+              <div><small>Department</small><b>Cardiology</b></div>
+              <div><small>Booked</small><b>18 Oct, via patient portal</b></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-h"><h3>Latest vitals</h3><span class="chip grey">From records · 20 Sep</span></div>
+          <div class="vitals">
+            <div class="vital"><small>Blood pressure</small><b>148/94<em>mmHg</em></b><span class="t warn">Stage 2 range</span></div>
+            <div class="vital"><small>Heart rate</small><b>78<em>bpm</em></b><span class="t ok">Normal</span></div>
+            <div class="vital"><small>LDL cholesterol</small><b>3.9<em>mmol/L</em></b><span class="t warn">Above target</span></div>
+            <div class="vital"><small>BMI</small><b>27.1</b><span class="t">Overweight</span></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-h"><h3>Appointment history</h3><a class="link" href="#profile">View all <i data-i="arrow-r"></i></a></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Time</th><th>Reason</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td>24 Oct 2024</td><td>10:15</td><td>Blood pressure check and ECG review</td><td><span class="chip">Checked in</span></td></tr>
+                <tr><td>20 Sep 2024</td><td>09:00</td><td>ECG and lipid panel</td><td><span class="chip grey">Completed</span></td></tr>
+                <tr><td>02 Aug 2024</td><td>14:30</td><td>Palpitations follow-up</td><td><span class="chip red">Cancelled</span></td></tr>
+                <tr><td>11 Mar 2024</td><td>11:00</td><td>New patient consultation</td><td><span class="chip grey">Completed</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <div class="stack">
+        <section class="card">
+          <div class="card-h"><h3>Shared records</h3><span class="chip"><i data-i="check"></i>Shared</span></div>
+          <ul class="recs">
+            <li><span class="tile"><i data-i="file"></i></span><div><b>ECG report</b><small>20 Sep 2024 · PDF</small></div><a href="#profile">View</a></li>
+            <li><span class="tile"><i data-i="flask"></i></span><div><b>Lipid panel</b><small>20 Sep 2024 · Lab result</small></div><a href="#profile">View</a></li>
+            <li><span class="tile"><i data-i="file"></i></span><div><b>Discharge summary</b><small>03 Mar 2024 · PDF</small></div><a href="#profile">View</a></li>
+          </ul>
+        </section>
+
+        <section class="card">
+          <div class="card-h"><h3>Visit notes</h3></div>
+          <div class="notes">
+            <label for="note-profile" class="state-cap" style="margin:0">Add a note for today's visit</label>
+            <textarea id="note-profile" placeholder="Add notes for this visit…"></textarea>
+            <div class="row"><button class="btn sm">Save note</button></div>
+            <div class="note"><small>20 Sep 2024 · Dr. Sarah Al-Mansoor</small>Sinus rhythm, occasional PVCs. Start amlodipine 5 mg daily. Recheck BP in 4 weeks.</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATES ============ -->
+<p class="frame-label" id="states"><b>States</b> · components to place in the frames above</p>
+<div class="states">
+  <div>
+    <p class="state-cap">Shared records · patient has not shared (shareRecords = false)</p>
+    <section class="card">
+      <div class="card-h"><h3>Shared records</h3><span class="chip grey"><i data-i="lock"></i>Not shared</span></div>
+      <div class="locked">
+        <span class="tile"><i data-i="lock"></i></span>
+        <b>Records not shared</b>
+        <p>Elena hasn't shared her medical records for this appointment. You can ask her to share them.</p>
+        <button class="btn ghost sm">Request access</button>
+      </div>
+    </section>
+  </div>
+  <div>
+    <p class="state-cap">Today's schedule · no appointments</p>
+    <section class="card">
+      <div class="card-h"><h3>Today's schedule</h3></div>
+      <div class="empty">
+        <span class="tile"><i data-i="calendar"></i></span>
+        <b>No appointments today</b>
+        <p>Confirmed appointments for today will show here.</p>
+      </div>
+    </section>
+  </div>
+  <div>
+    <p class="state-cap">Decline request · modal</p>
+    <section class="card modal" role="dialog" aria-labelledby="decline-title">
+      <h3 id="decline-title">Decline James Owusu's request?</h3>
+      <p>Fri, 25 Oct · 09:30. James will get an email and can book another time.</p>
+      <label for="decline-reason">Reason <span>(optional, shared with the patient)</span>
+        <textarea id="decline-reason" placeholder="For example: I'm not available that morning. Please book with Dr. Okafor."></textarea>
+      </label>
+      <div class="row"><button class="btn ghost">Keep request</button><button class="btn danger">Decline</button></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const P = {
+  "grid":'<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
+  "calendar":'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  "users":'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  "message":'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  "shield":'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  "sun":'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  "logout":'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  "search":'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  "bell":'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  "clock":'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  "play":'<path d="M6 3l14 9-14 9z"/>',
+  "file":'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  "alert":'<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
+  "video":'<path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  "check":'<path d="M20 6 9 17l-5-5"/>',
+  "x":'<path d="M18 6 6 18M6 6l12 12"/>',
+  "chev":'<path d="m6 9 6 6 6-6"/>',
+  "lock":'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  "arrow-r":'<path d="M5 12h14M12 5l7 7-7 7"/>',
+  "arrow-l":'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  "flask":'<path d="M9 3h6M10 3v7.4L4.5 19a2 2 0 0 0 1.7 3h11.6a2 2 0 0 0 1.7-3L14 10.4V3"/>',
+  "hourglass":'<path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>',
+  "plus-box":'<path d="M12 7v10M7 12h10"/>'
+};
+document.querySelectorAll("i[data-i]").forEach(el => {
+  const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  s.setAttribute("viewBox", "0 0 24 24");
+  s.setAttribute("class", "i");
+  s.setAttribute("aria-hidden", "true");
+  s.innerHTML = P[el.dataset.i] || "";
+  el.replaceWith(s);
+});
+</script>

@@ -12,6 +12,7 @@ export interface IDoctorDoc extends Document {
         start: string; 
         end: string }[];
     gender: "male" | "female" | "other";
+    userId?: mongoose.Types.ObjectId;
 }
 
 const DoctorSchema = new Schema<IDoctorDoc>({
@@ -53,6 +54,14 @@ const DoctorSchema = new Schema<IDoctorDoc>({
         type: String, 
         enum: ["male", "female" ], 
         required: true 
+    },
+    // The doctor's login account. Set when a doctor account is created for
+    // this profile; the doctor portal and doctor AI assistant rely on it.
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        unique: true,
+        sparse: true
     },
 });
 

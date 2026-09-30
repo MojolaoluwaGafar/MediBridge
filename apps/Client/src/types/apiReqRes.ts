@@ -80,7 +80,8 @@ export interface IBookAppointmentPayload {
 export interface IBookAppointmentRes {
   success: boolean;
   message: string;
-  appointment: IAppointment
+  appointment: IAppointment;
+  safetyMessage?: string;
 }
 
 export interface IGetAppointmentsRes {
@@ -113,12 +114,17 @@ export interface IGetDepartmentRes {
   department: IDepartment;
 }
 
+export type UrgencyLevel = "routine" | "urgent" | "emergency";
+
 export interface IAiChatPayload {
   message: string;
+  sessionId?: string | null;
 }
 
 export interface IAiChatResponse {
   reply: string;
+  sessionId: string | null;
+  urgency: UrgencyLevel;
 }
 
 
