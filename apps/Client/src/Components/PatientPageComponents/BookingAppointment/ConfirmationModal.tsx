@@ -5,6 +5,7 @@ type Props = {
   docName: string;
   day: string;
   time: string;
+  safetyMessage?: string;
   onClose: () => void;
 };
 
@@ -12,6 +13,7 @@ export default function ConfirmationModal({
   docName,
   day,
   time,
+  safetyMessage,
   onClose,
 }: Props) {
   return (
@@ -33,6 +35,15 @@ export default function ConfirmationModal({
           We've booked you with{" "}
           <span className="font-medium">{docName}</span> on {day} at {time}.
         </p>
+
+        {safetyMessage && (
+          <p
+            role="alert"
+            className="mb-6 rounded-lg border border-[#F2C4BF] bg-[#FDECEA] px-4 py-3 text-left text-sm text-[#8C1D18] leading-relaxed"
+          >
+            {safetyMessage}
+          </p>
+        )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
           {/* <Button

@@ -26,6 +26,7 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
   const [reason, setReason] = useState<string | null>(null)
   const [shareRecords, setShareRecords] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
+  const [safetyMessage, setSafetyMessage] = useState<string | undefined>()
 
   const { bookAppointment, loading, error } = useBookAppointment()
   const { doctors } = useDoctors();
@@ -82,7 +83,8 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
     }
 
     try {
-      await bookAppointment(appointmentData);
+      const response = await bookAppointment(appointmentData);
+      setSafetyMessage(response.safetyMessage);
       onBooked?.();
       console.log("Appointment booked :",appointmentData);
       
@@ -202,6 +204,7 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
           docName={selectedDoc?.docName || ""}
           day={day}
           time={time}
+          safetyMessage={safetyMessage}
           onClose={onClose}
         />
       )}

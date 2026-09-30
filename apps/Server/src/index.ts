@@ -8,9 +8,12 @@ import BookingRoutes from "./Routes/BookingRoutes"
 import DoctorsRoutes from "./Routes/DoctorsRoutes"
 import ActivityRoutes from "./Routes/ActivityRoutes"
 import SupportRoutes from "./Routes/SupportRoutes"
+import FlagRoutes from "./Routes/FlagRoutes"
 dotenv.config()
 const app : Application = express()
 
+// Render and Vercel sit behind one proxy; needed so rate limits see real client IPs.
+app.set("trust proxy", 1)
 app.use(express.json())
 
 const configuredOrigins = (process.env.CORS_ORIGINS || "")
@@ -63,6 +66,7 @@ app.use("/api", BookingRoutes)
 app.use("/api", DoctorsRoutes)
 app.use("/api", ActivityRoutes)
 app.use("/api", SupportRoutes)
+app.use("/api", FlagRoutes)
 app.use("/api", DepartmentRoutes)
 
 const startServer = async () => {
