@@ -12,4 +12,10 @@ export interface IAppointment {
     createdAt: string;
     updatedAt: string;
     userId?: string;
+    urgency?: {
+        level: "routine" | "urgent" | "emergency";
+        reason: string;
+        source: "keyword" | "ai" | "keyword+ai" | "doctor";
+        updatedAt: string;
+    };
 }
