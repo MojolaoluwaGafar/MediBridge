@@ -125,7 +125,9 @@ export function useApiQuery<
   useEffect(() => {
     if (!enabled) return;
 
-    void fetchData(...([] as unknown as TArgs));
+    // Failures are already in `error`; catching here stops them surfacing as
+    // unhandled rejections (e.g. the "already in progress" one under StrictMode).
+    fetchData(...([] as unknown as TArgs)).catch(() => {});
   }, [enabled, fetchData]);
 
   const reset = useCallback(() => {

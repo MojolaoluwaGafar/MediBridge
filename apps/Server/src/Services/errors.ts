@@ -1,8 +1,10 @@
 // An expected failure raised by a service, such as a record that does not
 // exist or a code that has expired. Controllers turn it into an HTTP response
 // with this status; any other error is unexpected and becomes a 500.
+// `field` names the form field the error is about, when there is one, so the
+// client can show it next to that input.
 export class ServiceError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(public readonly status: number, message: string, public readonly field?: string) {
     super(message);
     this.name = "ServiceError";
   }

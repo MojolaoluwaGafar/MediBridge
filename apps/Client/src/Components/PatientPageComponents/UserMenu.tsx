@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { PiSignOut } from "react-icons/pi";
 import UserAvatar from "../../assets/user-avatar-filled-svgrepo-com.svg";
@@ -9,6 +9,7 @@ type Props = {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onLogout: () => void;
+  onOpenSettings?: () => void;
 };
 
 export default function UserMenu({
@@ -16,13 +17,14 @@ export default function UserMenu({
   isOpen,
   setIsOpen,
   onLogout,
+  onOpenSettings,
 }: Props) {
   return (
     <div className="relative flex items-center gap-2 sm:gap-3">
       <img
         src={user?.img || UserAvatar}
         className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
-        alt="user"
+        alt=""
       />
 
       <div className="hidden md:flex items-center gap-2">
@@ -69,6 +71,20 @@ export default function UserMenu({
               {user?.email}
             </p>
           </div>
+
+          {onOpenSettings && (
+            <button
+              type="button"
+              className="flex items-center gap-2 pb-3 text-[#605E5E] hover:text-[#28574E] transition"
+              onClick={() => {
+                setIsOpen(false);
+                onOpenSettings();
+              }}
+            >
+              <Settings size={18} />
+              Account settings
+            </button>
+          )}
 
           <button
             type="button"

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DocProfileModal from "./DocProfileModal";
 import { useDoctors } from "../../../Hooks/Doctors/useDoctors";
 import type { IDoctor } from "../../../types/doctor";
@@ -93,11 +93,9 @@ export default function StepTwo({
   const [selectedDoctor, setSelectedDoctor] = useState<IDoctor | null>(null);
   const [profileDoc, setProfileDoc] = useState<IDocProfile | null>(null);
 
-  const { doctors, fetchDoctors, loading, error } = useDoctors();
-
-  useEffect(() => {
-    fetchDoctors();
-  }, []);
+  // useDoctors loads the list on mount; a second manual fetch here only
+  // raised "Request already in progress" errors.
+  const { doctors, loading, error } = useDoctors();
 
   const filteredDoctors = selectedDepartment
     ? doctors.filter(

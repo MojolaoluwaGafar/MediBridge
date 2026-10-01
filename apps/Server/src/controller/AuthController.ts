@@ -136,6 +136,7 @@ export const login = async (req : Request, res : Response) => {
                 lastname : user.LastName,
                 email : user.Email,
                 role : user.role,
+                img : user.ProfileImage ?? undefined,
             },
             token : tokenFor(user),
         })

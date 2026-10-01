@@ -131,6 +131,28 @@ export interface IAiChatResponse {
   urgency: UrgencyLevel;
 }
 
+export interface IAiChatSessionSummary {
+  sessionId: string;
+  title: string;
+  updatedAt: string;
+}
+
+export interface IAiChatSessionsRes {
+  success: boolean;
+  sessions: IAiChatSessionSummary[];
+}
+
+export interface IAiChatSessionRes {
+  success: boolean;
+  sessionId: string;
+  messages: {
+    role: "user" | "assistant";
+    content: string;
+    level: UrgencyLevel | null;
+    at: string;
+  }[];
+}
+
 
 export type ApiErrorResponse = { error?: string; message?: string };
 

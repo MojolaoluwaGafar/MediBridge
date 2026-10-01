@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useApiMutation } from "../Api/useApiMutation";
 import { aiService } from "../../API/services/AIService";
 import { useAuth } from "../Auth/useAuth";
-import type { UrgencyLevel } from "../../types/apiReqRes";
+import type { UrgencyLevel, IAiChatSessionRes } from "../../types/apiReqRes";
 
 export interface ChatMessage {
   id: string;
@@ -11,12 +11,26 @@ export interface ChatMessage {
   urgency?: UrgencyLevel;
 }
 
+// Saved chats store the triage level on the patient's message. In the live
+// chat it travels with the reply, so move it onto the reply here too.
+function toChatMessages(saved: IAiChatSessionRes["messages"]): ChatMessage[] {
+  let lastUserLevel: UrgencyLevel | undefined;
+  return saved.map((message) => {
+    if (message.role === "user") {
+      lastUserLevel = message.level ?? undefined;
+      return { id: crypto.randomUUID(), sender: "user", text: message.content };
+    }
+    return { id: crypto.randomUUID(), sender: "ai", text: message.content, urgency: lastUserLevel };
+  });
+}
+
 export function useAI() {
   const { user } = useAuth();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   // Lets the server keep the conversation's history and link safety flags to it.
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [loadingSession, setLoadingSession] = useState(false);
 
   const welcomeMessage = useMemo<ChatMessage | null>(() => {
     const name = user?.firstname || "there";
@@ -70,16 +84,34 @@ export function useAI() {
     }
   };
 
-  const clearChat = ()=> {
+  // Reopens a saved chat (signed-in patients and doctors only).
+  const loadSession = useCallback(async (id: string) => {
+    setLoadingSession(true);
+    try {
+      const saved = await aiService.getSession(id);
+      setSessionId(saved.sessionId);
+      setMessages(toChatMessages(saved.messages));
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setLoadingSession(false);
+    }
+  }, []);
+
+  const clearChat = useCallback(() => {
     setMessages([]);
     setSessionId(null);
-  };
+  }, []);
 
   return {
     messages : displayedMessages,
+    sessionId,
     sendMessage,
+    loadSession,
     clearChat,
     loading,
+    loadingSession,
     error,
   };
 }

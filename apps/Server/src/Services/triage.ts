@@ -1,4 +1,5 @@
 import { chatWithAI } from "./ai";
+import { logger } from "../Utils/logger";
 
 // Safety triage for anything a patient or visitor writes: chat messages and the
 // "reason for visit" on a booking. Two layers:
@@ -150,7 +151,7 @@ async function aiTriage(text: string): Promise<Omit<TriageResult, "source"> | nu
       reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 300) : "",
     };
   } catch (error) {
-    console.error("AI triage unavailable, using keyword triage only");
+    logger.warn("AI triage unavailable, using keyword triage only");
     return null;
   }
 }

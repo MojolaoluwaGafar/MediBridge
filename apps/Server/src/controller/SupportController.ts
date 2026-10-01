@@ -7,6 +7,8 @@ import { buildSystemPrompt, chatRoleFor } from "../Services/aiRoles";
 import { ChatSession, type ChatRole, type IChatSession } from "../Models/ChatSession";
 import Flagged from "../Models/Flagged";
 import type { AuthRequest } from "../middlewares/Auth";
+import * as chatHistoryService from "../Services/chatHistoryService";
+import { sendError } from "../Utils/sendError";
 
 const MAX_MESSAGE_LENGTH = 2000;
 const HISTORY_SENT_TO_AI = 12;
@@ -32,6 +34,24 @@ async function findOrCreateSession(
     messages: [],
   });
 }
+
+export const getChatSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const sessions = await chatHistoryService.listChatSessions(req.user!);
+    return res.status(200).json({ success: true, sessions });
+  } catch (error) {
+    return sendError(req, res, error);
+  }
+};
+
+export const getChatSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const session = await chatHistoryService.getChatSession(req.user!, req.params.sessionId as string);
+    return res.status(200).json({ success: true, ...session });
+  } catch (error) {
+    return sendError(req, res, error);
+  }
+};
 
 export const sendMessage = async (req: AuthRequest, res: Response) => {
   try {

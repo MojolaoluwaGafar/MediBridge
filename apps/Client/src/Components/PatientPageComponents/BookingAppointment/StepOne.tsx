@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Input from "../../Input";
 import type { ComponentType } from "react";
 import {
@@ -75,11 +75,9 @@ export default function StepOne({
 }) {
   const [selectedDep, setSelectedDep] = useState<string | null>(null);
 
-  const { doctors, fetchDoctors, loading, error } = useDoctors();
-
-  useEffect(() => {
-    fetchDoctors();
-  }, []);
+  // useDoctors loads the list on mount; a second manual fetch here only
+  // raised "Request already in progress" errors.
+  const { doctors, loading, error } = useDoctors();
 
   const departments: ISelectDep[] = [
     {
