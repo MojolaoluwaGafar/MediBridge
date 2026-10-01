@@ -57,21 +57,21 @@ Both apps deploy to Render from one Blueprint, [`render.yaml`](./render.yaml):
 | Service             | App           | Render type | Build (from repo root) | Start / output |
 | ------------------- | ------------- | ----------- | ---------------------- | -------------- |
 | `medibridge-api`    | `apps/Server` | Web service | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
-| `medibridge-client` | `apps/Client` | Static site | `npm ci && npm run build -w @medibridge/client` | `apps/Client/dist` |
+| `medibridge-client` | `apps/Client` | Static site | `npm ci --include=dev && npm run build -w @medibridge/client` | `apps/Client/dist` |
 
 In Render, choose **New → Blueprint** and pick this repository (or open the
-existing Blueprint and click **Sync**). Render asks for the secret values
-(database URL, API keys) when it creates each service, then deploys the
+existing Blueprint and click **Manual Sync**). Render asks for the secret
+values (database URL, API keys) when it creates each service, then deploys the
 `test` branch automatically once CI passes. Both build from the repo root
 because the workspaces share one `package-lock.json`.
 
-After the first deploy, connect the two services with their public URLs:
-
-1. On **medibridge-client**, set `VITE_BASE_URL` to the API's URL (for
-   example `https://medibridge-api.onrender.com`) and redeploy: Vite bakes it
-   into the build.
-2. On **medibridge-api**, set `CLIENT_ORIGIN` to the client's URL so browsers
-   on that site may call the API.
+The two services are connected by one value: when Render asks for
+`VITE_BASE_URL` on **medibridge-client**, enter the API's URL,
+`https://medibridge-api.onrender.com` (check the API's page in the dashboard;
+Render adds a suffix if that name was taken). Vite builds it into the app, so
+changing it later needs a client redeploy. The API already accepts requests
+from `medibridge-client*.onrender.com`; set `CLIENT_ORIGIN` on the API only if
+the client gets a custom domain.
 
 The client was previously hosted on Vercel; those URLs are still allowed by the
 API, and [`apps/Client/vercel.json`](./apps/Client/vercel.json) still works.

@@ -3,9 +3,10 @@ import { AxiosError } from "axios";
 
 import { clearAuth } from "../utils/authToken";
 
-// The API's address. On Render it comes from the API service as a bare host
-// ("medibridge-api.onrender.com"), so add https:// when no scheme is given.
-const rawBaseUrl = (import.meta.env.VITE_BASE_URL ?? "").trim();
+// The API's address, from VITE_BASE_URL at build time. A bare host
+// ("medibridge-api.onrender.com") or a trailing slash is accepted, since both
+// are easy to paste into Render's dashboard.
+const rawBaseUrl = (import.meta.env.VITE_BASE_URL ?? "").trim().replace(/\/+$/, "");
 export const API_BASE_URL = rawBaseUrl && !/^https?:\/\//i.test(rawBaseUrl) ? `https://${rawBaseUrl}` : rawBaseUrl;
 
 const api = axios.create({

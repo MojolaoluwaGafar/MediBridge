@@ -25,8 +25,9 @@ app.use(httpLogger)
 app.use(express.json())
 
 // Extra allowed browser origins: CORS_ORIGINS (comma separated) plus
-// CLIENT_ORIGIN, which Render fills with the client site's host. Render gives
-// a bare host ("medibridge-client.onrender.com"), so add https:// if needed.
+// CLIENT_ORIGIN (e.g. a custom domain for the client). The Render client site
+// is allowed by pattern below, so a plain Render deploy needs neither. A bare
+// host ("portal.example.com") gets https:// added.
 const withScheme = (origin: string) => (/^https?:\/\//i.test(origin) ? origin : `https://${origin}`);
 const configuredOrigins = [process.env.CORS_ORIGINS || "", process.env.CLIENT_ORIGIN || ""]
   .join(",")
@@ -51,6 +52,12 @@ const isAllowedOrigin = (origin: string | undefined) => {
   }
 
   if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  // The Render static site from render.yaml. Render adds a suffix when the
+  // name is taken, e.g. https://medibridge-client-ab12.onrender.com.
+  if (/^https:\/\/medibridge-client(-[a-z0-9]+)?\.onrender\.com$/i.test(origin)) {
     return true;
   }
 
