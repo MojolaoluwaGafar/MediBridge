@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit, ipKeyGenerator } from "express-rate-limit";
-import { sendMessage } from "../controller/SupportController";
-import { optionalAuth, type AuthRequest } from "../middlewares/Auth";
+import { sendMessage, getLatestSession } from "../controller/SupportController";
+import { authMiddleware, optionalAuth, type AuthRequest } from "../middlewares/Auth";
 
 const router = Router();
 
@@ -17,5 +17,6 @@ const chatLimiter = rateLimit({
 });
 
 router.post("/aiChat", optionalAuth, chatLimiter, sendMessage);
+router.get("/aiChat/latest", authMiddleware, getLatestSession);
 
 export default router;

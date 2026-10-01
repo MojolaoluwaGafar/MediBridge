@@ -35,6 +35,7 @@ export default function MessageContainer() {
             key={msg.id}
             isMine={msg.sender === "user"}
             text={msg.text}
+            urgency={msg.urgency}
           />
         ))}
         {loading && <AiChatBubble isMine={false} text="Thinking..." />}

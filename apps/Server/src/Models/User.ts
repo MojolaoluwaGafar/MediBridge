@@ -13,6 +13,8 @@ export interface IUser extends Document {
   isActive : boolean;
   activationCode? : string | null;
   activationCodeExpires? : Date | null;
+  ProfileImage? : string | null;
+  ProfileImageId? : string | null;
 }
 
 const UserSchema: Schema<IUser> = new Schema<IUser>({
@@ -64,6 +66,15 @@ const UserSchema: Schema<IUser> = new Schema<IUser>({
   },
   activationCodeExpires : {
     type : Date,
+    default : null
+  },
+  // Profile photo URL, and its Cloudinary public ID so a replaced photo can be deleted.
+  ProfileImage : {
+    type : String,
+    default : null
+  },
+  ProfileImageId : {
+    type : String,
     default : null
   },
 });

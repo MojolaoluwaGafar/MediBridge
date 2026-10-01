@@ -2,6 +2,13 @@ import type { IAppointment } from "./appointment";
 import type { Activity } from "./activity";
 import type { IDoctor } from "./doctor";
 import type { IDepartment } from "./department";
+import type { IMedicalRecord } from "./record";
+import type {
+  IConversationContact,
+  IConversationMessage,
+  IConversationSummary,
+} from "./conversation";
+import type { IAccountProfile } from "./account";
 
 export interface IVerifyUserRes {
   success: boolean;
@@ -127,6 +134,45 @@ export interface IAiChatResponse {
   urgency: UrgencyLevel;
 }
 
+export interface IAiHistoryMessage {
+  role: "user" | "assistant";
+  content: string;
+  level: UrgencyLevel | null;
+  at: string;
+}
+
+export interface IAiHistoryResponse {
+  sessionId: string | null;
+  messages: IAiHistoryMessage[];
+}
+
+export interface IGetRecordsRes {
+  success: boolean;
+  records: IMedicalRecord[];
+}
+
+export interface IGetConversationsRes {
+  success: boolean;
+  conversations: IConversationSummary[];
+}
+
+export interface IGetConversationRes {
+  success: boolean;
+  contact: IConversationContact | null;
+  messages: IConversationMessage[];
+}
+
+export interface ISendConversationMessageRes {
+  success: boolean;
+  message: IConversationMessage;
+  safetyMessage?: string;
+}
+
+export interface IAccountRes {
+  success: boolean;
+  message?: string;
+  profile: IAccountProfile;
+}
 
 export type ApiErrorResponse = { error?: string; message?: string };
 

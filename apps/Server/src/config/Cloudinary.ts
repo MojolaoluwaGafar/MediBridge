@@ -22,5 +22,25 @@ const storage = new CloudinaryStorage({
   },
 });
 export const upload = multer({ storage });
+
+// Profile photos: images only, max 2 MB, stored as a 400x400 face-centred crop.
+const avatarStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async () => ({
+    folder: "MediBridge/avatars",
+    resource_type: "image",
+    allowed_formats: ["jpg", "jpeg", "png", "webp"],
+    transformation: [{ width: 400, height: 400, crop: "fill", gravity: "face" }],
+  }),
+});
+
+export const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, callback) => {
+    if (/^image\/(jpeg|png|webp)$/.test(file.mimetype)) return callback(null, true);
+    callback(Object.assign(new Error("Please choose a JPG, PNG or WebP image."), { code: "INVALID_FILE_TYPE" }));
+  },
+});
 export default cloudinary;
 

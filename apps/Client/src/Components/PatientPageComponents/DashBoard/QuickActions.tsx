@@ -4,6 +4,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { patientTabLink } from "../PatientTabs";
 type Props = {
   onBookAppointment: () => void;
 };
@@ -35,7 +36,7 @@ export default function QuickActions({
 
         <button
         onClick={()=> {
-          navigate("/support")
+          navigate(patientTabLink("aiSupport"))
         }}
           type="button"
           className="w-full min-h-[60px] border border-[#E7E4E4] rounded-lg flex items-center gap-3 px-4 bg-white transition hover:bg-gray-50"
@@ -51,7 +52,7 @@ export default function QuickActions({
 
         <button
         onClick={()=>{
-          navigate("/underConstruction")
+          navigate(patientTabLink("medRecords"))
         }}
           type="button"
           className="w-full min-h-[60px] border border-[#E7E4E4] rounded-lg flex items-center gap-3 px-4 bg-white transition hover:bg-gray-50"

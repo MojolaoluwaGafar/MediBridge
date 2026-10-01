@@ -9,7 +9,7 @@ type Props = {
   activeTab: string;
   user: AuthUser | null;
   searchTerm?: string;
-  setSearchTerm?: React.Dispatch<React.SetStateAction<string>>;
+  setSearchTerm?: (value: string) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isUserMenuOpen: boolean;
@@ -70,11 +70,16 @@ export default function Topbar({
   };
 
   return (
-    <header className="border-b border-[#E6EFF5] bg-white mx-auto container">
-      <div className="flex items-center justify-between px-4 py-4 lg:px-6">
+    // From lg up the header is fixed at 5rem tall and sticks to the top; the
+    // sidebar sits under it (lg:top-20 in SideBar.tsx), so change both together.
+    <header className="z-30 border-b border-[#E6EFF5] bg-white lg:sticky lg:top-0">
+      <div className="container mx-auto flex items-center justify-between px-4 py-4 lg:h-20 lg:px-6 lg:py-0">
         <div className="flex items-center gap-3">
           <button
             type="button"
+            aria-label="Open menu"
+            aria-controls="portal-sidebar"
+            aria-expanded={isSidebarOpen}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="lg:hidden rounded-md p-2 hover:bg-gray-100"
           >
@@ -106,7 +111,7 @@ export default function Topbar({
         </div>
       </div>
 
-      <div className="px-4 pb-4 lg:hidden">{renderTitle()}</div>
+      <div className="container mx-auto px-4 pb-4 lg:hidden">{renderTitle()}</div>
     </header>
   );
 }

@@ -9,6 +9,9 @@ import DoctorsRoutes from "./Routes/DoctorsRoutes"
 import ActivityRoutes from "./Routes/ActivityRoutes"
 import SupportRoutes from "./Routes/SupportRoutes"
 import FlagRoutes from "./Routes/FlagRoutes"
+import RecordRoutes from "./Routes/RecordRoutes"
+import MessageRoutes from "./Routes/MessageRoutes"
+import AccountRoutes from "./Routes/AccountRoutes"
 dotenv.config()
 const app : Application = express()
 
@@ -68,6 +71,9 @@ app.use("/api", ActivityRoutes)
 app.use("/api", SupportRoutes)
 app.use("/api", FlagRoutes)
 app.use("/api", DepartmentRoutes)
+app.use("/api", RecordRoutes)
+app.use("/api", MessageRoutes)
+app.use("/api", AccountRoutes)
 
 const startServer = async () => {
     try {

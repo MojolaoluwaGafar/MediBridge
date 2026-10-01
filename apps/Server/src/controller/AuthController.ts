@@ -188,6 +188,7 @@ export const SetPassword = async (req : AuthRequest, res : Response) => {
                 firstname : user.FirstName,
                 lastname : user.LastName,
                 role : user.role,
+                img : user.ProfileImage ?? undefined,
             },
             token
         })
@@ -246,6 +247,7 @@ export const login = async (req : Request, res : Response) => {
                 lastname : user.LastName,
                 email : user.Email,
                 role : user.role,
+                img : user.ProfileImage ?? undefined,
             },
             token,
         })
@@ -387,6 +389,7 @@ export const resetPassword = async (req : AuthRequest, res : Response) => {
                 lastname: user.LastName,
                 email: user.Email,
                 role: user.role,
+                img: user.ProfileImage ?? undefined,
             },
             token,
         });

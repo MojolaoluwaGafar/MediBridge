@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 import type { TriageCategory, TriageLevel, TriageSource } from "../Services/triage";
 
 export interface IFlaggedMessage extends Document {
-  source: "chat" | "booking";
+  source: "chat" | "booking" | "message";
   sessionId?: string;
   userId?: mongoose.Types.ObjectId;
   appointmentId?: mongoose.Types.ObjectId;
@@ -19,7 +19,7 @@ export interface IFlaggedMessage extends Document {
 }
 
 const FlaggedMessageSchema = new Schema<IFlaggedMessage>({
-  source: { type: String, enum: ["chat", "booking"], default: "chat" },
+  source: { type: String, enum: ["chat", "booking", "message"], default: "chat" },
   sessionId: {
     type: String,
     required: function (this: IFlaggedMessage) {

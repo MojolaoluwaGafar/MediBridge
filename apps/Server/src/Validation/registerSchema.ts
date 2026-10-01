@@ -61,3 +61,26 @@ export const resetPasswordSchema = z.object({
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+}).refine((data) => data.newPassword !== data.currentPassword, {
+  message: "New password must be different from your current password",
+  path: ["newPassword"],
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const updateProfileSchema = z.object({
+  PhoneNumber: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9][0-9\s-]{6,19}$/, "Enter a valid phone number"),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
