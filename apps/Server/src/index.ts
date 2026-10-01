@@ -24,10 +24,16 @@ app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1))
 app.use(httpLogger)
 app.use(express.json())
 
-const configuredOrigins = (process.env.CORS_ORIGINS || "")
+// Extra allowed browser origins: CORS_ORIGINS (comma separated) plus
+// CLIENT_ORIGIN, which Render fills with the client site's host. Render gives
+// a bare host ("medibridge-client.onrender.com"), so add https:// if needed.
+const withScheme = (origin: string) => (/^https?:\/\//i.test(origin) ? origin : `https://${origin}`);
+const configuredOrigins = [process.env.CORS_ORIGINS || "", process.env.CLIENT_ORIGIN || ""]
+  .join(",")
   .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean)
+  .map(withScheme);
 
 const allowedOrigins = [
   ...configuredOrigins,

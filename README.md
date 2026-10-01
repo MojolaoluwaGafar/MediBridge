@@ -52,16 +52,29 @@ npm run seed:departments -w @medibridge/server
 
 ## Deployment
 
-| App           | Platform | Root directory | Build           | Start / output |
-| ------------- | -------- | -------------- | --------------- | -------------- |
-| `apps/Client` | Vercel   | `apps/Client`  | `npm run build` | `dist`         |
-| `apps/Server` | Render   | repo root      | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
+Both apps deploy to Render from one Blueprint, [`render.yaml`](./render.yaml):
 
-The Server is defined as a Render Blueprint in [`render.yaml`](./render.yaml).
-In Render, choose **New → Blueprint** and pick this repository. Render asks for
-the secret values (database URL, API keys) on the first deploy, and then
-deploys `main` automatically once CI passes. The Server builds from the repo
-root because the workspaces share one `package-lock.json`.
+| Service             | App           | Render type | Build (from repo root) | Start / output |
+| ------------------- | ------------- | ----------- | ---------------------- | -------------- |
+| `medibridge-api`    | `apps/Server` | Web service | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
+| `medibridge-client` | `apps/Client` | Static site | `npm ci && npm run build -w @medibridge/client` | `apps/Client/dist` |
+
+In Render, choose **New → Blueprint** and pick this repository (or open the
+existing Blueprint and click **Sync**). Render asks for the secret values
+(database URL, API keys) when it creates each service, then deploys the
+`test` branch automatically once CI passes. Both build from the repo root
+because the workspaces share one `package-lock.json`.
+
+After the first deploy, connect the two services with their public URLs:
+
+1. On **medibridge-client**, set `VITE_BASE_URL` to the API's URL (for
+   example `https://medibridge-api.onrender.com`) and redeploy: Vite bakes it
+   into the build.
+2. On **medibridge-api**, set `CLIENT_ORIGIN` to the client's URL so browsers
+   on that site may call the API.
+
+The client was previously hosted on Vercel; those URLs are still allowed by the
+API, and [`apps/Client/vercel.json`](./apps/Client/vercel.json) still works.
 
 ## Git workflow
 

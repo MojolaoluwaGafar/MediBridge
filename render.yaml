@@ -1,9 +1,16 @@
-# Render Blueprint for the MediBridge API (apps/Server).
-# The Client stays on Vercel (see README). Set VITE_BASE_URL there to this
-# service's URL, and add the Vercel URL to CORS_ORIGINS here if it isn't covered.
+# Render Blueprint for MediBridge: the API (apps/Server) and the web client
+# (apps/Client, a static site). Both deploy from the `test` branch once CI
+# passes on it.
 #
-# Deploy: Render Dashboard -> New -> Blueprint -> pick this repository.
-# Render asks for every "sync: false" value on the first deploy.
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repository (or, if
+# the Blueprint already exists, open it and click "Sync" to add the client).
+# Render asks for every "sync: false" value when it first creates a service;
+# anything left empty can be set later under the service's Environment tab.
+#
+# The two services need each other's public URLs, which Render only shows once
+# they exist (e.g. https://medibridge-api.onrender.com). After the first deploy:
+#   - client VITE_BASE_URL  = the API's URL, then redeploy the client
+#   - API    CLIENT_ORIGIN  = the client's URL (so the browser may call the API)
 
 services:
   - type: web
@@ -11,8 +18,8 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    branch: main
-    # Deploy only after the CI workflow passes on main.
+    branch: test
+    # Deploy only after the CI workflow passes on this branch.
     autoDeployTrigger: checksPass
     # The repo is an npm workspace with one lockfile at the root, so install
     # and build from the root. --include=dev keeps TypeScript available even
@@ -33,6 +40,11 @@ services:
         value: "22"
       - key: NODE_ENV
         value: production
+      - key: LOG_LEVEL
+        value: info
+      # Render puts one proxy in front of the app (used by the rate limiter).
+      - key: TRUST_PROXY_HOPS
+        value: "1"
 
       # Database
       - key: DB_CONNECTION_URL
@@ -42,10 +54,22 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
 
-      # Extra allowed browser origins, comma separated. The production Vercel
-      # URLs and *.vercel.app are already allowed in code.
+      # The client site's URL, e.g. https://medibridge-client.onrender.com.
+      # The Vercel URLs and *.vercel.app are already allowed in code.
+      - key: CLIENT_ORIGIN
+        sync: false
+      # Any other allowed browser origins, comma separated.
       - key: CORS_ORIGINS
         sync: false
+
+      # Appointments (see docs/architecture/api.md)
+      - key: HOSPITAL_TIMEZONE
+        value: Africa/Lagos
+      - key: APPOINTMENT_SLOT_MINUTES
+        value: "30"
+      # The Terms page and reschedule screen say 7 days; change them together.
+      - key: RESCHEDULE_NOTICE_DAYS
+        value: "7"
 
       # AI (see docs/architecture/ai.md)
       - key: GROQ_API_KEY
@@ -63,10 +87,86 @@ services:
       - key: EMAIL_FROM
         sync: false
 
-      # Cloudinary (image uploads and seed scripts)
+      # SMS for activation and reset codes (see docs/architecture/phone-verification.md).
+      # termii | twilio | none. Leave empty for none: codes then go by email only.
+      - key: SMS_PROVIDER
+        sync: false
+      - key: DEFAULT_PHONE_COUNTRY
+        value: NG
+      - key: TERMII_API_KEY
+        sync: false
+      - key: TERMII_SENDER_ID
+        sync: false
+      - key: TERMII_BASE_URL
+        value: https://v3.api.termii.com
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_MESSAGING_SERVICE_SID
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+
+      # Cloudinary (profile photos and seed scripts)
       - key: CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  # The React app, served as static files. Static sites are free and don't
+  # sleep, unlike free web services.
+  - type: web
+    name: medibridge-client
+    runtime: static
+    branch: test
+    autoDeployTrigger: checksPass
+    buildCommand: npm ci && npm run build -w @medibridge/client
+    staticPublishPath: ./apps/Client/dist
+    # Skip deploys for changes that can't affect the client.
+    buildFilter:
+      paths:
+        - apps/Client/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    # The app does its own routing, so every path serves index.html
+    # (/patientDashboard, /login, ... would otherwise 404 on refresh).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # Built assets have content hashes in their names, so cache them forever.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      # Basic hardening for a health portal.
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    # VITE_* values are baked in at build time: redeploy after changing them.
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # The API's URL, e.g. https://medibridge-api.onrender.com
+      - key: VITE_BASE_URL
+        sync: false
+      # Shown on the Contact page; leave any empty to hide that line.
+      - key: VITE_HOSPITAL_PHONE
+        sync: false
+      - key: VITE_HOSPITAL_EMAIL
+        sync: false
+      - key: VITE_HOSPITAL_ADDRESS
+        sync: false
+      - key: VITE_HOSPITAL_HOURS
         sync: false

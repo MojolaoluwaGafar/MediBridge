@@ -3,7 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    # test is the working branch and deploys to Render once these checks pass.
+    branches: [main, test]
 
 permissions:
   contents: read
