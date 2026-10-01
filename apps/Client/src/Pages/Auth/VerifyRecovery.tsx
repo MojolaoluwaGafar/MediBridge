@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { verifyCodeSchema, type VerifyCodeInput } from '../../Validation/ActivationSchema'
 import { showToast } from '../../utils/toastHelper'
+import { apiErrorMessage } from '../../utils/apiError'
 import { useVerifyOTP } from '../../Hooks/Auth/useVerifyOTP'
 import { useLocation, useNavigate } from 'react-router'
 import api from '../../API'
@@ -124,7 +125,7 @@ export default function VerifyRecovery() {
     inputRefs.current[lastIndex]?.focus();
     };
 
-    const { verifyOTP, loading, error} = useVerifyOTP()
+    const { verifyOTP, loading } = useVerifyOTP()
     
     const submit = async (formData : VerifyCodeInput ) => {
             try {
@@ -132,13 +133,12 @@ export default function VerifyRecovery() {
                 if (email) {
                     localStorage.setItem("resetEmail", email);
                 }
-                console.log("Code request successful:", result);
                 showToast(result.message, "success");
                 reset();
                 setOtp(["", "", "", "", "", ""]);
-                navigate("/resetPassword", { state: { email } })
-            } catch (err : any) {
-                const message = err.response?.data?.error || err.response?.data?.message || error || "Failed to send OTP"
+                navigate("/resetPassword", { state: { email, passwordToken: result.passwordToken } })
+            } catch (err) {
+                const message = apiErrorMessage(err, "Failed to send OTP");
                 console.error("Code request error error:", message);
                 showToast(message, "error")
             }
@@ -158,9 +158,8 @@ export default function VerifyRecovery() {
                 setValue("code", "");
                 inputRefs.current[0]?.focus();
             }
-        } catch (err : any) {
-            console.log("Failed to resend :", err);
-            showToast(err.response?.data?.error || "Failed to resend code", "error");
+        } catch (err) {
+            showToast(apiErrorMessage(err, "Failed to resend code"), "error");
         }
     };
 

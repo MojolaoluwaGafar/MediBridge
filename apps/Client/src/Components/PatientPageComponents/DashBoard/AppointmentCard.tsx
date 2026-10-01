@@ -1,57 +1,58 @@
-import React, { useMemo } from "react"
+import React from "react"
 import Button from "../../Button";
 import { CalendarDays, Clock } from "lucide-react";
 import type { IAppointment } from "../../../types/appointment";
+import { usePatientTab } from "../../../Hooks/Portal/usePatientTab";
+import { displayStatus } from "../../../utils/appointmentStatus";
+import { formatDateString } from "../../../utils/formatDate";
+import Avatar from "../../PortalComponents/Avatar";
 
 type AppointmentCardProps = {
     appointment: IAppointment;
     onView: (appointment: IAppointment) => void;
-    onReschedule : (appointment: IAppointment)=> void;
-    onCancel: (id: string) => void;
+    onReschedule: (appointment: IAppointment) => void;
+    onCancel: (appointment: IAppointment) => void;
 };
 
+// The dashboard's "next appointment" card. Only upcoming appointments reach it.
 function AppointmentCard({ appointment, onView, onReschedule, onCancel }: AppointmentCardProps) {
-    const { doctor, date, time, status } = appointment;
-    const formattedDate = useMemo(
-    () =>
-        new Date(date).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-        }),
-    [date]
-    );
+    const { doctor, date, time } = appointment;
+    const { goToTab } = usePatientTab();
+    const status = displayStatus(appointment);
 
-    const avatar = doctor.docImg ?? "/images/default-avatar.png"
     return (
-    <div className="w-full rounded-xl border border-[#D7D7D7] p-6 lg:h-50 flex flex-col justify-between">
-        <div className="flex flex-col lg:flex lg:flex-row gap-2 relative">
-            <img className="w-[69.8px] h-19.25 rounded-[4.01px] object-cover" src={avatar} alt={doctor.docName} />
+    <div className="w-full rounded-xl border border-[#D7D7D7] p-6 flex flex-col justify-between gap-5">
+        <div className="flex flex-col sm:flex-row gap-3 relative pr-28">
+            <Avatar name={doctor.docName} image={doctor.docImg} size="lg" />
             <div>
-                <h1 className="text-[#141313] fontOutfit font-medium text-[20px]">{doctor.docName}</h1>
+                <h2 className="text-[#141313] fontOutfit font-medium text-[20px]">{doctor.docName}</h2>
                 <p className="text-[#605E5E] fontOutfit font-light text-[16px]">
                     {doctor.department} Department
                 </p>
-                <div className="flex flex-col lg:flex lg:flex-row lg:gap-8 text-[#605E5E]">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:gap-x-6 text-[#605E5E]">
                     <p className="flex items-center gap-2">
-                        <CalendarDays size={18} color="#605E5E" /> {formattedDate}
+                        <CalendarDays size={18} color="#605E5E" /> {formatDateString(date)}
                     </p>
-                    <p className="flex items-center gap-2">
+                    <p className="flex items-center gap-2 whitespace-nowrap">
                         <Clock size={18} color="#605E5E" /> {time}
                     </p>
                 </div>
             </div>
-            
-            <span className="absolute top-0 right-0 bg-[#E0F8F3] text-[#28574E] rounded-3xl h-10 w-26 flex items-center justify-center">
-                {status}
+
+            <span className={`absolute top-0 right-0 rounded-3xl px-4 h-9 flex items-center justify-center text-sm ${status.className}`}>
+                {status.label}
             </span>
         </div>
-        
-        <div className="flex flex-col lg:flex lg:flex-row gap-4 mt-5">
-            <Button type="button" width="w-full lg:w-[164px]" content="View Details" onClick={() => onView(appointment)} />
-            <Button type="button" width="w-full lg:w-[164px]" content="Reschedule" variant="outline" onClick={()=> onReschedule(appointment)} />
-            <button type="button" className="text-red-600 font-normal" onClick={()=> onCancel(appointment._id)}>Cancel</button>
+
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-4">
+            <Button type="button" size="sm" width="w-full lg:w-[164px]" content="View Details" onClick={() => onView(appointment)} />
+            <Button type="button" size="sm" width="w-full lg:w-[164px]" content="Reschedule" variant="outline" onClick={() => onReschedule(appointment)} />
+            {doctor._id && (
+                <button type="button" className="text-[#3E3B3B] fontOutfit hover:underline" onClick={() => goToTab("messages", { doctor: doctor._id! })}>
+                    Message
+                </button>
+            )}
+            <button type="button" className="text-red-600 font-normal hover:underline" onClick={() => onCancel(appointment)}>Cancel</button>
         </div>
     </div>
   );

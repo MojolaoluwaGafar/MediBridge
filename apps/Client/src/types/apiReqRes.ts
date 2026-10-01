@@ -15,7 +15,6 @@ export interface IVerifyUserRes {
   // Masked number the code was also texted to (e.g. "+234 *** *** 4567"),
   // or null when it went by email only.
   phone? : string | null;
-  token: string;
 }
 
 export interface IVerifyCodeRes {
@@ -26,6 +25,8 @@ export interface IVerifyCodeRes {
     email : string;
     role : string;
   }
+  // One-time ticket that allows setting the password (valid 15 minutes).
+  passwordToken : string;
 }
 
 export interface ISetPasswordRes{
@@ -72,6 +73,21 @@ export interface IGetDoctorRes {
   doctor: IDoctor;
 }
 
+export interface IDoctorSlot {
+  time: string;
+  available: boolean;
+  // Why it can't be booked: someone else has it, or it has already started.
+  reason?: "booked" | "past";
+}
+
+export interface IDoctorSlotsRes {
+  success: boolean;
+  date: string;
+  day: string;
+  slotMinutes: number;
+  slots: IDoctorSlot[];
+}
+
 export interface IBookAppointmentPayload {
   doctor: string;
   department: string;
@@ -113,10 +129,6 @@ export interface IGetDepartmentsRes {
   departments: IDepartment[];
 }
 
-export interface IGetDepartmentRes {
-  success?: boolean;
-  department: IDepartment;
-}
 
 export type UrgencyLevel = "routine" | "urgent" | "emergency";
 

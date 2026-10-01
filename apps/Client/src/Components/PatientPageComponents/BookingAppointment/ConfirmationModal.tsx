@@ -7,6 +7,7 @@ type Props = {
   time: string;
   safetyMessage?: string;
   onClose: () => void;
+  onMessageDoctor?: () => void;
 };
 
 export default function ConfirmationModal({
@@ -15,6 +16,7 @@ export default function ConfirmationModal({
   time,
   safetyMessage,
   onClose,
+  onMessageDoctor,
 }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
@@ -46,13 +48,15 @@ export default function ConfirmationModal({
         )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
-          {/* <Button
-            type="button"
-            content="Message Doctor"
-            variant="outline"
-            onClick={() => console.log("Messaging doctor...")}
-            className="w-full sm:w-auto"
-          /> */}
+          {onMessageDoctor && (
+            <Button
+              type="button"
+              content="Message Doctor"
+              variant="outline"
+              onClick={onMessageDoctor}
+              className="w-full sm:w-auto px-4"
+            />
+          )}
 
           <Button
             type="button"

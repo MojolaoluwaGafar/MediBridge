@@ -25,10 +25,11 @@ function sendError(res: Response, error: any) {
     return res.status(500).json({ error: error.message });
 }
 
-function tokenFor(user: IUser, role: string = user.role) {
+// The role always comes from the stored account, never from the request.
+function tokenFor(user: IUser) {
     const payload : JWTPayLoad = {
         id : user._id.toString(),
-        role
+        role : user.role
     }
     return generateToken(payload)
 }
@@ -58,7 +59,6 @@ export const VerifyUser = async (req: Request, res: Response) => {
             },
             phone : smsSent && phone ? maskPhone(phone) : null,
             expiresAt : user.activationCodeExpires,
-            token : tokenFor(user, req.body.role || "user")
         })
   } catch (error: any) {
     sendError(res, error);
@@ -74,7 +74,7 @@ export const verifyCode = async (req : AuthRequest, res : Response) => {
         }
 
         const { code, email, Email, UserId } = parsed.data
-        const user = await authService.activateAccount({ id: req.user?.id, email: email || Email, UserId }, code)
+        const { user, passwordToken } = await authService.activateAccount({ email: email || Email, UserId }, code)
 
         return res.status(200).json({
             success : true,
@@ -83,7 +83,8 @@ export const verifyCode = async (req : AuthRequest, res : Response) => {
                 id : user._id,
                 email : user.Email,
                 role : user.role
-            }
+            },
+            passwordToken
         })
     } catch (error : any) {
         return sendError(res, error)
@@ -97,8 +98,8 @@ export const SetPassword = async (req : AuthRequest, res : Response) => {
             return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const { password, email, Email, UserId } = parsed.data
-        const user = await authService.setPassword({ id: req.user?.id, email: email || Email, UserId }, password)
+        const { password, passwordToken } = parsed.data
+        const user = await authService.setPassword(passwordToken, password)
 
         return res.status(200).json({
             success : true,
@@ -175,12 +176,16 @@ export const verifyRecoveryCode = async (req: Request, res: Response) => {
     }
 
     const { code, email, Email } = parsed.data;
-    const user = await authService.verifyRecoveryCode(code, email || Email);
+    if (!(email || Email)) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    const { user, passwordToken } = await authService.verifyRecoveryCode(code, (email || Email)!);
 
     return res.status(200).json({
       success: true,
       message: "Code verified successfully, proceed to reset password",
       user: { id: user._id, email: user.Email },
+      passwordToken,
     });
   } catch (error: any) {
     return sendError(res, error);
@@ -195,8 +200,8 @@ export const resetPassword = async (req : AuthRequest, res : Response) => {
             return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const { password, email, Email, UserId } = parsed.data;
-        const user = await authService.resetPassword({ id: req.user?.id, email: email || Email, UserId }, password)
+        const { password, passwordToken } = parsed.data;
+        const user = await authService.resetPassword(passwordToken, password)
 
         return res.status(200).json({
             success: true,

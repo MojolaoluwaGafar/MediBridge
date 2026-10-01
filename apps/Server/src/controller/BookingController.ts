@@ -1,19 +1,8 @@
 import { Response } from "express";
-import { BookingSchema } from "../Validation/BookingSchema";
+import { BookingSchema, RescheduleSchema } from "../Validation/BookingSchema";
 import type { AuthRequest } from "../middlewares/Auth";
 import * as appointmentService from "../Services/appointmentService";
-import { isServiceError } from "../Services/errors";
-
-function sendError(res: Response, error: any) {
-  if (isServiceError(error)) {
-    return res.status(error.status).json({ success: false, message: error.message });
-  }
-  return res.status(500).json({
-    success: false,
-    message: "Internal server error",
-    error: error.message,
-  });
-}
+import { sendError, sendValidationError } from "../Utils/sendError";
 
 export const bookAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -43,7 +32,7 @@ export const bookAppointment = async (req: AuthRequest, res: Response) => {
       safetyMessage,
     });
   } catch (error: any) {
-    return sendError(res, error);
+    return sendError(req, res, error);
   }
 };
 
@@ -60,7 +49,7 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
       appointments,
     });
   } catch (error: any) {
-    return sendError(res, error);
+    return sendError(req, res, error);
   }
 };
 
@@ -76,7 +65,10 @@ export const rescheduleAppointment = async (
       });
     }
 
-    const { date, time } = req.body;
+    const parsed = RescheduleSchema.safeParse(req.body);
+    if (!parsed.success) return sendValidationError(res, parsed.error);
+
+    const { date, time } = parsed.data;
     const appointment = await appointmentService.rescheduleAppointment(req.user.id, req.params.id as string, date, time);
 
     return res.status(200).json({
@@ -85,7 +77,7 @@ export const rescheduleAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    return sendError(res, error);
+    return sendError(req, res, error);
   }
 };
 
@@ -109,7 +101,7 @@ export const cancelAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    return sendError(res, error);
+    return sendError(req, res, error);
   }
 };
 
@@ -119,6 +111,6 @@ export const setAppointmentUrgency = async (req: AuthRequest, res: Response) => 
     const appointment = await appointmentService.setAppointmentUrgency(req.user!.id, req.params.id as string, level, reason);
     return res.status(200).json({ success: true, appointment });
   } catch (error: any) {
-    return sendError(res, error);
+    return sendError(req, res, error);
   }
 };

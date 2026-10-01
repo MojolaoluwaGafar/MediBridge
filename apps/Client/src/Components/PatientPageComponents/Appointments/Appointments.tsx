@@ -7,7 +7,8 @@ import { useAppointmentModals } from "../../../Hooks/Appointments/useAppointment
 import ViewAppointmentModal from "../DashBoard/ViewAppointmentModal";
 import Reschedule from "./Reschedule";
 import BookAppointmentModal from "../DashBoard/BookAppointmentModal";
-import { appointmentService } from "../../../API/services/appointmentService";
+import { useCancelAppointment } from "../../../Hooks/Appointments/useCancelAppointment";
+import { isCompleted, isUpcoming } from "../../../utils/appointmentStatus";
 import EmptyAppointmentState from "../DashBoard/EmptyAppointmentState";
 
 export default function Appointments() {
@@ -25,19 +26,16 @@ export default function Appointments() {
     handleReschedule,
   } = useAppointmentModals();
 
-  const completedCount = appointments.filter(
-    (appointment) => appointment.status.toLowerCase() === "completed"
-  ).length;
+  // Each appointment belongs to exactly one tab. Past confirmed visits count
+  // as completed even before the server has marked them.
+  const tabOf = (appointment: (typeof appointments)[number]) =>
+    isUpcoming(appointment) ? "Upcoming" : isCompleted(appointment) ? "Completed" : appointment.status === "cancelled" ? "Cancelled" : null;
 
-  const upcomingCount = appointments.filter(
-    (appointment) =>
-      appointment.status.toLowerCase() === "confirmed" ||
-      appointment.status.toLowerCase() === "upcoming"
-  ).length;
+  const upcomingCount = appointments.filter((a) => tabOf(a) === "Upcoming").length;
+  const completedCount = appointments.filter((a) => tabOf(a) === "Completed").length;
+  const cancelledCount = appointments.filter((a) => tabOf(a) === "Cancelled").length;
 
-  const cancelledCount = appointments.filter(
-    (appointment) => appointment.status.toLowerCase() === "cancelled"
-  ).length;
+  const { requestCancel, dialog: cancelDialog } = useCancelAppointment(() => void fetchAppointments().catch(() => {}));
 
   const tabs = [
     {
@@ -57,36 +55,14 @@ export default function Appointments() {
     },
   ];
 
-  const filteredAppointments = appointments.filter((appointment) => {
-    switch (activeTab) {
-      case "Upcoming":
-        return (
-          appointment.status.toLowerCase() === "confirmed" ||
-          appointment.status.toLowerCase() === "upcoming"
-        );
-
-      case "Completed":
-        return appointment.status.toLowerCase() === "completed";
-
-      case "Cancelled":
-        return appointment.status.toLowerCase() === "cancelled";
-
-      default:
-        return true;
-    }
-  });
-
-  const handleCancel = async (id: string) => {
-    try {
-      await appointmentService.cancelAppointment(id);
-      fetchAppointments();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const filteredAppointments = appointments.filter((appointment) => tabOf(appointment) === activeTab);
+  // Soonest first for upcoming (the server's order); most recent first for past ones.
+  if (activeTab !== "Upcoming") filteredAppointments.reverse();
 
   return (
     <>
+      {cancelDialog}
+
       {selectedAppointment && (
         <ViewAppointmentModal
           appointment={selectedAppointment}
@@ -167,7 +143,8 @@ export default function Appointments() {
                   appointment={appointment}
                   onView={handleView}
                   onReschedule={handleReschedule}
-                  onCancel={handleCancel}
+                  onCancel={requestCancel}
+                  onBookAgain={() => setShowBooking(true)}
                 />
               ))}
             </div>

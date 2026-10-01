@@ -1,7 +1,8 @@
 import Logo from "../../assets/MediBridgeLogo.svg";
-import { Bell, Search, Menu } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { Link } from "react-router";
 import UserMenu from "./UserMenu";
+import NotificationBell from "./NotificationBell";
 import type { AuthUser } from "../../Hooks/Auth/useAuth";
 
 type Props = {
@@ -91,9 +92,7 @@ export default function Topbar({
         </div>
 
         <div className="flex items-center gap-3 lg:gap-5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F5F7FA] lg:h-12 lg:w-12">
-            <Bell size={20} />
-          </span>
+          <NotificationBell userId={user?.id} />
           <UserMenu
             user={user}
             isOpen={isUserMenuOpen}

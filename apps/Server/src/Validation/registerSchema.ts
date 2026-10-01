@@ -8,7 +8,7 @@ export const registerSchema = z.object({
     .string()
     .min(1, "Registered phone number is required")
     .refine((value) => normalizePhone(value) !== null, "Enter a valid phone number, e.g. 0803 123 4567 or +234 803 123 4567"),
-  role: z.enum(["user", "doctor", "admin"]).default("user"),
+  // No role here: a person's role always comes from their account, never the request.
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -25,14 +25,13 @@ export const verifyCodeSchema = z.object({
 
 export type VerifyCodeInput = z.infer<typeof verifyCodeSchema>;
 
+// passwordToken is the one-time ticket returned when the code was verified.
 export const setPasswordSchema = z.object({
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   terms: z.boolean().refine(val => val === true, {
     message: "You must agree to the Terms and Privacy Policy",
   }).optional(),
-  email: z.string().email("Invalid email address").optional(),
-  Email: z.string().email("Invalid email address").optional(),
-  UserId: z.string().optional(),
+  passwordToken: z.string().min(1, "Please verify your activation code first"),
 });
 
 export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
@@ -56,9 +55,7 @@ export const resetPasswordSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
-  email: z.string().email("Invalid email address").optional(),
-  Email: z.string().email("Invalid email address").optional(),
-  UserId: z.string().optional(),
+  passwordToken: z.string().min(1, "Please verify your reset code first"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],

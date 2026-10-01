@@ -9,6 +9,7 @@ import { ServiceError } from "./errors";
 
 const ACTIVATION_CODE_TTL_MS = 5 * 60 * 1000;
 const RECOVERY_CODE_TTL_MS = 15 * 60 * 1000;
+const PASSWORD_TICKET_TTL_MS = 15 * 60 * 1000;
 const BCRYPT_ROUNDS = 12;
 
 // How a flow identifies the patient: the id from their token if they have
@@ -44,11 +45,40 @@ function findUser({ id, email, UserId }: UserLookup) {
   return null;
 }
 
-async function setNewPassword(lookup: UserLookup, password: string, notFoundMessage: string) {
-  const user = await findUser(lookup);
-  if (!user) throw new ServiceError(404, notFoundMessage);
+type TicketPurpose = "activation" | "recovery";
+
+const hashTicket = (ticket: string) => crypto.createHash("sha256").update(ticket).digest("hex");
+
+// After a patient proves they own the account (a correct activation or reset
+// code), they get a one-time ticket that lets them set a password. Without it
+// anyone who knew an email address or Patient ID could set the password.
+// Only the hash is stored, so a database leak doesn't expose usable tickets.
+async function issuePasswordTicket(user: IUser, purpose: TicketPurpose): Promise<string> {
+  const ticket = crypto.randomBytes(32).toString("base64url");
+  user.PasswordTicketHash = hashTicket(ticket);
+  user.PasswordTicketPurpose = purpose;
+  user.PasswordTicketExpires = new Date(Date.now() + PASSWORD_TICKET_TTL_MS);
+  await user.save();
+  return ticket;
+}
+
+async function setPasswordWithTicket(ticket: string, purpose: TicketPurpose, password: string) {
+  const user = await User.findOne({
+    PasswordTicketHash: hashTicket(ticket),
+    PasswordTicketPurpose: purpose,
+    PasswordTicketExpires: { $gt: new Date() },
+  });
+  if (!user) {
+    throw new ServiceError(400, "This link has expired. Please verify your code again.");
+  }
+  if (purpose === "activation" && !user.isActive) {
+    throw new ServiceError(400, "Please activate your account first.");
+  }
 
   user.Password = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  user.PasswordTicketHash = null;
+  user.PasswordTicketPurpose = null;
+  user.PasswordTicketExpires = null;
   await user.save();
   return user;
 }
@@ -91,12 +121,13 @@ export async function activateAccount(lookup: UserLookup, code: string) {
   user.isActive = true;
   user.activationCode = null;
   user.activationCodeExpires = null;
-  await user.save();
-  return user;
+  const passwordToken = await issuePasswordTicket(user, "activation");
+  return { user, passwordToken };
 }
 
-export function setPassword(lookup: UserLookup, password: string) {
-  return setNewPassword(lookup, password, "Patient not found");
+// `passwordToken` is the ticket returned by activateAccount.
+export function setPassword(passwordToken: string, password: string) {
+  return setPasswordWithTicket(passwordToken, "activation", password);
 }
 
 export async function authenticate(UserId: string, password: string) {
@@ -126,11 +157,10 @@ export async function startPasswordRecovery(email: string): Promise<CodeDelivery
   return { user, phone, smsSent };
 }
 
-export async function verifyRecoveryCode(code: string, email?: string) {
-  const user = await User.findOne({
-    activationCode: code,
-    ...(email ? { Email: email } : {}),
-  });
+// The email is required: matching a 6-digit code across every account would
+// make guessing far easier.
+export async function verifyRecoveryCode(code: string, email: string) {
+  const user = await User.findOne({ activationCode: code, Email: email.trim().toLowerCase() });
   if (!user) throw new ServiceError(404, "Invalid code");
   if (!user.activationCodeExpires || user.activationCodeExpires < new Date()) {
     throw new ServiceError(400, "Code expired");
@@ -138,10 +168,11 @@ export async function verifyRecoveryCode(code: string, email?: string) {
 
   user.activationCode = null;
   user.activationCodeExpires = null;
-  await user.save();
-  return user;
+  const passwordToken = await issuePasswordTicket(user, "recovery");
+  return { user, passwordToken };
 }
 
-export function resetPassword(lookup: UserLookup, password: string) {
-  return setNewPassword(lookup, password, "User not found");
+// `passwordToken` is the ticket returned by verifyRecoveryCode.
+export function resetPassword(passwordToken: string, password: string) {
+  return setPasswordWithTicket(passwordToken, "recovery", password);
 }

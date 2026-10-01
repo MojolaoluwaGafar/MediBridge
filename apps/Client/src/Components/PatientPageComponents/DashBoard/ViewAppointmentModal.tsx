@@ -1,6 +1,8 @@
 import Button from "../../Button";
 import type { IAppointment } from "../../../types";
 import { usePatientTab } from "../../../Hooks/Portal/usePatientTab";
+import { formatDateString } from "../../../utils/formatDate";
+import Avatar from "../../PortalComponents/Avatar";
 type Props = {
   appointment: IAppointment;
   onClose: () => void;
@@ -10,13 +12,8 @@ export default function ViewAppointmentModal({
   appointment,
   onClose,
 }: Props) {
-  const formattedDate = new Date(appointment.date).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = formatDateString(appointment.date);
 
-  const avatar = appointment.doctor.docImg || "/images/default-avatar.png";
   const { goToTab } = usePatientTab();
 
   return (
@@ -45,11 +42,7 @@ export default function ViewAppointmentModal({
         </div>
 
         <div className="flex gap-2 mt-3 border-t border-b py-5 border-[#D9D9D9]">
-          <img
-            className="w-[69.8px] h-12.75 rounded-[4.01px] object-cover"
-            src={avatar}
-            alt={appointment.doctor.docName}
-          />
+          <Avatar name={appointment.doctor.docName} image={appointment.doctor.docImg} size="lg" />
 
           <div className="flex flex-col gap-1">
             <h1 className="text-[#141313] fontOutfit font-medium text-[20px]">

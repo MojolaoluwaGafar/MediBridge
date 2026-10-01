@@ -29,7 +29,10 @@ export const authMiddleware = (req : AuthRequest, res : Response, next : NextFun
         req.user = decoded;
         next()
     } catch (error) {
-        return res.status(403).json({
+        // 401, not 403: the caller isn't signed in (any more). 403 is kept for
+        // signed-in users without permission (requireRole), so the client can
+        // sign people out on 401 only.
+        return res.status(401).json({
             message : "Invalid or expired token"
         })
     }

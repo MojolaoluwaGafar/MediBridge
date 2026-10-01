@@ -12,6 +12,8 @@ import RecentActivities from "./RecentActivities";
 import BookAppointmentModal from "./BookAppointmentModal";
 import ViewAppointmentModal from "./ViewAppointmentModal";
 import Reschedule from "../Appointments/Reschedule";
+import { useCancelAppointment } from "../../../Hooks/Appointments/useCancelAppointment";
+import { isUpcoming } from "../../../utils/appointmentStatus";
 
 export default function Dashboard() {
     const [showBooking, setShowBooking] = useState(false);
@@ -57,18 +59,17 @@ export default function Dashboard() {
     };
     }, [loading]);
 
-    const upcomingAppointments = useMemo(() =>
-        appointments.filter((appointment) => {
-            const status = appointment.status.toLowerCase();
+    // Appointments arrive soonest first, so the first upcoming one is next.
+    const upcomingAppointments = useMemo(() => appointments.filter(isUpcoming), [appointments]);
 
-        return status === "confirmed" || status === "upcoming";
-    }),
-    [appointments]);
+    const { requestCancel, dialog: cancelDialog } = useCancelAppointment(() => void fetchAppointments().catch(() => {}));
 
     const upcomingAppointment = upcomingAppointments[0] ?? null;
 
     return (
     <div className="w-full px-4 md:px-0">
+      {cancelDialog}
+
       {selectedAppointment && (
         <ViewAppointmentModal
           appointment={selectedAppointment}
@@ -105,6 +106,7 @@ export default function Dashboard() {
           onBookAppointment={() => setShowBooking(true)}
           onView={handleView}
           onReschedule={handleReschedule}
+          onCancel={requestCancel}
         />
 
         <QuickActions onBookAppointment={() => setShowBooking(true)} />

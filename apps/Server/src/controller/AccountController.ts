@@ -30,7 +30,7 @@ export const uploadAvatar = async (req: AuthRequest, res: Response) => {
     if (!req.file) {
       return res.status(400).json({ success: false, message: "Choose a photo to upload" });
     }
-    const profile = await accountService.setPhoto(req.user!.id, req.file.path, req.file.filename);
+    const profile = await accountService.setPhoto(req.user!.id, req.file.buffer);
     return res.status(200).json({ success: true, message: "Profile photo updated", profile });
   } catch (error) {
     return sendError(req, res, error);

@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { X, CircleAlert } from "lucide-react";
 
 import Button from "../../Button";
 import ViewRescheduledAppointment from "./ViewRescheduledAppointment";
 import RescheduledConfirmationModal from "./RescheduledConfirmationModal";
 import { appointmentService } from "../../../API/services/appointmentService";
+import SlotPicker from "../BookingAppointment/SlotPicker";
+import { usePatientTab } from "../../../Hooks/Portal/usePatientTab";
+import { apiErrorMessage, apiFieldErrors } from "../../../utils/apiError";
+import { formatDateString, todayDateString } from "../../../utils/formatDate";
 
 import type { IAppointment } from "../../../types/appointment";
 
@@ -21,65 +25,23 @@ export default function Reschedule({
 }: Props) {
   const doctor = appointment.doctor;
 
-  const [selectedDate, setSelectedDate] = useState(appointment.date);
-  const [selectedTime, setSelectedTime] = useState(appointment.time);
+  const [selectedDate, setSelectedDate] = useState<string | null>(appointment.date);
+  const [selectedTime, setSelectedTime] = useState<string | null>(appointment.time);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [slotRefresh, setSlotRefresh] = useState(0);
+  const { goToTab } = usePatientTab();
   const [showReview, setShowReview] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [updatedAppointment, setUpdatedAppointment] =
     useState<IAppointment | null>(null);
 
-  const appointmentDate = useMemo(
-    () => new Date(appointment.date),
-    [appointment.date]
+  // Same rule as the server (RESCHEDULE_NOTICE_DAYS): whole days between
+  // today and the appointment, from date strings so time zones can't shift it.
+  const daysUntil = Math.round(
+    (Date.parse(`${appointment.date}T00:00:00Z`) - Date.parse(`${todayDateString()}T00:00:00Z`)) / 86_400_000
   );
-
-  const today = useMemo(() => new Date(), []);
-
-  const canReschedule = useMemo(() => {
-    const diff = appointmentDate.getTime() - today.getTime();
-
-    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-
-    return days >= 7;
-  }, [appointmentDate, today]);
-
-  const handleDateChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const pickedDate = e.target.value;
-
-    const chosen = new Date(pickedDate);
-    const today = new Date();
-
-    if (chosen < new Date(today.toDateString())) {
-      setError("You cannot select a past date.");
-      return;
-    }
-
-    setError(null);
-    setSelectedDate(pickedDate);
-    setSelectedTime("");
-  };
-
-  const getDayName = (date: string) =>
-    new Date(date).toLocaleDateString("en-US", {
-      weekday: "long",
-    });
-
-  const matchingSlots = useMemo(() => {
-    if (!selectedDate) return [];
-
-    const selectedDay = getDayName(selectedDate);
-
-    return doctor.availableTime.filter(
-      (slot) => slot.day === selectedDay
-    );
-  }, [doctor.availableTime, selectedDate]);
-
-  const handleTimeClick = (time: string) => {
-    setSelectedTime(time);
-  };
+  const canReschedule = appointment.status === "confirmed" && daysUntil >= 7;
 
   const handleNext = () => {
     if (!selectedDate || !selectedTime) return;
@@ -88,6 +50,9 @@ export default function Reschedule({
   };
 
   const handleConfirmReschedule = async () => {
+    if (!selectedDate || !selectedTime || saving) return;
+    setSaving(true);
+    setError(null);
     try {
       const { appointment: updatedAppointment } =
         await appointmentService.rescheduleAppointment({
@@ -101,18 +66,20 @@ export default function Reschedule({
       setShowReview(false);
       setShowConfirmation(true);
     } catch (err) {
-      console.error(err);
+      setError(apiErrorMessage(err, "We couldn't reschedule this appointment. Please try again."));
+      // The slot went (or the date isn't valid): pick again with fresh slots.
+      if (apiFieldErrors(err).some((e) => e.field === "date" || e.field === "time")) {
+        setSelectedTime(null);
+        setSlotRefresh((n) => n + 1);
+        setShowReview(false);
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (showConfirmation) {
-    const parsedDate = new Date(selectedDate);
-
-    const day = parsedDate.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
+  if (showConfirmation && selectedDate && selectedTime) {
+    const day = formatDateString(selectedDate);
 
     return (
       <RescheduledConfirmationModal
@@ -120,7 +87,8 @@ export default function Reschedule({
         day={day}
         time={selectedTime}
         onMessageDoctor={() => {
-          console.log("message");
+          onClose();
+          if (doctor._id) goToTab("messages", { doctor: doctor._id });
         }}
         onViewAppointment={() => {
           if (!updatedAppointment) return;
@@ -132,12 +100,14 @@ export default function Reschedule({
     );
   }
 
-  if (showReview) {
+  if (showReview && selectedDate && selectedTime) {
     return (
       <ViewRescheduledAppointment
         appointment={appointment}
         newDate={selectedDate}
         newTime={selectedTime}
+        saving={saving}
+        error={error}
         onBack={() => setShowReview(false)}
         onClose={onClose}
         onRescheduled={handleConfirmReschedule}
@@ -159,8 +129,9 @@ export default function Reschedule({
           </h2>
 
           <p className="mb-6 text-gray-600">
-            Appointments can only be rescheduled at least 7 days before the
-            scheduled date.
+            {appointment.status !== "confirmed"
+              ? "Only upcoming appointments can be rescheduled."
+              : "Appointments can only be rescheduled at least 7 days before the scheduled date. Please contact the hospital to change it."}
           </p>
 
           <Button
@@ -210,55 +181,25 @@ export default function Reschedule({
             </p>
           </div>
 
-          <label className="mb-2 block font-medium">
-            Select a New Date
-          </label>
-
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={handleDateChange}
-            className="w-full rounded-md border border-[#D7D7D7] p-3"
+          <SlotPicker
+            doctorId={doctor._id}
+            appointmentId={appointment._id}
+            date={selectedDate}
+            time={selectedTime}
+            refreshKey={slotRefresh}
+            onDateChange={(date) => {
+              setSelectedDate(date);
+              setSelectedTime(null);
+              setError(null);
+            }}
+            onTimeChange={setSelectedTime}
           />
 
           {error && (
-            <p className="mt-2 text-red-500">
+            <p role="alert" className="mt-4 text-sm text-red-600">
               {error}
             </p>
           )}
-
-          <h2 className="mt-6 mb-3 font-medium">
-            Time Slots
-          </h2>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-
-            {!selectedDate ? (
-              <p className="text-gray-500 sm:col-span-2 lg:col-span-3">
-                Select a date first.
-              </p>
-            ) : matchingSlots.length > 0 ? (
-              matchingSlots.map((slot) => (
-                <button
-                  key={slot.start}
-                  type="button"
-                  onClick={() => handleTimeClick(slot.start)}
-                  className={`h-14 rounded-lg border transition ${
-                    selectedTime === slot.start
-                      ? "bg-[#28574E] text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  {slot.start}
-                </button>
-              ))
-            ) : (
-              <p className="text-gray-500 sm:col-span-2 lg:col-span-3">
-                No available slots for this day.
-              </p>
-            )}
-
-          </div>
 
           <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 

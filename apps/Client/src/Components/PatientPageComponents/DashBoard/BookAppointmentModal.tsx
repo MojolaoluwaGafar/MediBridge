@@ -11,6 +11,9 @@ import ConfirmationModal from '../BookingAppointment/ConfirmationModal'
 import { useBookAppointment } from '../../../Hooks/Appointments/useBookAppointment'
 import type { IBookAppointmentPayload } from '../../../types/apiReqRes'
 import type { IDoctor } from '../../../types/doctor'
+import { apiErrorMessage, apiFieldErrors } from '../../../utils/apiError'
+import { formatDateString } from '../../../utils/formatDate'
+import { usePatientTab } from '../../../Hooks/Portal/usePatientTab'
 
 type Props = {
   onClose: () => void;
@@ -27,35 +30,17 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
   const [shareRecords, setShareRecords] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
   const [safetyMessage, setSafetyMessage] = useState<string | undefined>()
+  const [bookingError, setBookingError] = useState<string | null>(null)
+  // Bumped to reload the slots when the server says one was just taken.
+  const [slotRefresh, setSlotRefresh] = useState(0)
 
-  const { bookAppointment, loading, error } = useBookAppointment()
+  const { bookAppointment, loading } = useBookAppointment()
+  const { goToTab } = usePatientTab()
   const { doctors } = useDoctors();
 
-  const parsedDateTime = useMemo(() => {
-    if (!selectedDate || !selectedTime) return null;
-
-    return new Date(`${selectedDate} ${selectedTime}`);
-  }, [selectedDate, selectedTime]);
-
-  const day = useMemo(() => {
-    if (!parsedDateTime) return "";
-
-    return parsedDateTime.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-    });
-  }, [parsedDateTime]);
-
-  const time = useMemo(() => {
-    if (!parsedDateTime) return "";
-
-    return parsedDateTime.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-    });
-  }, [parsedDateTime]);
+  // Slot times are already labels like "9:30 AM"; only the date needs formatting.
+  const day = selectedDate ? formatDateString(selectedDate) : "";
+  const time = selectedTime ?? "";
 
   const nextStep = useCallback(() => {
     setStep((prev) => Math.min(prev + 1, 5));
@@ -68,6 +53,8 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
   const handleSelectDep = useCallback((dep: string) => {
     setSelectedDep(dep);
     setSelectedDoc(null);
+    setSelectedDate(null);
+    setSelectedTime(null);
   }, []);
 
   const handleConfirmAppointment = async () => {
@@ -82,15 +69,21 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
       shareRecords,
     }
 
+    setBookingError(null)
     try {
       const response = await bookAppointment(appointmentData);
       setSafetyMessage(response.safetyMessage);
       onBooked?.();
-      console.log("Appointment booked :",appointmentData);
-      
       setShowConfirmation(true)
     } catch (err) {
-      console.error("Booking failed:", err)
+      setBookingError(apiErrorMessage(err, "We couldn't book this appointment. Please try again."))
+      // A problem with the date or time (e.g. someone else just took the slot):
+      // go back to the time step with fresh slots.
+      if (apiFieldErrors(err).some((e) => e.field === "date" || e.field === "time")) {
+        setSelectedTime(null)
+        setSlotRefresh((n) => n + 1)
+        setStep(3)
+      }
     }
   }
 
@@ -139,13 +132,23 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
               {step === 1 && <StepOne onSelect={handleSelectDep} DRs={doctors} />}
               {step === 2 && (
                 <StepTwo
-                  onSelectDoctor={setSelectedDoc}
+                  onSelectDoctor={(doc) => {
+                    // A different doctor has different slots.
+                    if (doc?._id !== selectedDoc?._id) {
+                      setSelectedDate(null)
+                      setSelectedTime(null)
+                    }
+                    setSelectedDoc(doc)
+                  }}
                   selectedDepartment={selectedDep}
                 />
               )}
               {step === 3 && (
                 <StepThree
                   doctor={selectedDoc}
+                  date={selectedDate}
+                  time={selectedTime}
+                  refreshKey={slotRefresh}
                   onSelectDateTime={(date, time) => {
                     setSelectedDate(date)
                     setSelectedTime(time)
@@ -196,7 +199,7 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
                 }`}
               />
             </div>
-              {error && <p className="text-red-500 my-2 text-center">{error}</p>}
+              {bookingError && <p role="alert" className="text-red-500 my-2 px-6 text-center">{bookingError}</p>}
           </div>
         </div>
       ) : (
@@ -206,6 +209,10 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
           time={time}
           safetyMessage={safetyMessage}
           onClose={onClose}
+          onMessageDoctor={selectedDoc?._id ? () => {
+            onClose()
+            goToTab("messages", { doctor: selectedDoc._id! })
+          } : undefined}
         />
       )}
     </>

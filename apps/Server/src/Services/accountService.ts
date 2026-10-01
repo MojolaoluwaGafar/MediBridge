@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { User, type IUser } from "../Models/User";
-import cloudinary from "../config/Cloudinary";
+import cloudinary, { uploadAvatar } from "../config/Cloudinary";
 import type { ChangePasswordInput } from "../Validation/accountSchema";
 import { logger } from "../Utils/logger";
 import { ServiceError } from "./errors";
@@ -51,14 +51,12 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
   await user.save();
 }
 
-// `url` and `publicId` come from the Cloudinary upload (multer-storage-cloudinary
-// puts them in req.file.path and req.file.filename).
-export async function setPhoto(userId: string, url: string, publicId: string) {
+// `image` is the uploaded file's bytes (already checked for type and size).
+export async function setPhoto(userId: string, image: Buffer) {
   const user = await User.findById(userId);
-  if (!user) {
-    await deletePhoto(publicId);
-    throw new ServiceError(404, "Account not found");
-  }
+  if (!user) throw new ServiceError(404, "Account not found");
+
+  const { url, publicId } = await uploadAvatar(image);
 
   const previousId = user.ProfileImageId;
   user.ProfileImage = url;

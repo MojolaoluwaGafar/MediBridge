@@ -5,19 +5,34 @@ server origin from `VITE_BASE_URL` and prefixes every request with `/api`.
 
 Authenticated routes expect `Authorization: Bearer <token>`. Tokens are issued
 by the auth routes and carry `{ id, role }`, where `role` is `user`, `doctor`,
-or `admin`.
+or `admin`. The role always comes from the stored account, never from the
+request. Tokens last one hour.
+
+Status codes the client relies on:
+- **401**: not signed in, or the token is invalid or expired. The client signs
+  the user out (except on `/api/auth/*`, where 401 means a wrong password).
+- **403**: signed in, but the role isn't allowed (`requireRole`). The client
+  keeps the session.
+- **400/404/409** errors from the newer routes look like
+  `{ success: false, message, errors?: [{ field, message }] }`.
 
 ## Auth — `/api/auth`
 
 | Method | Path                  | Auth | Purpose                                              |
 | ------ | --------------------- | ---- | ---------------------------------------------------- |
 | POST   | `/verifyUser`         | No   | Match Patient ID, email and registered phone (any format); send a 6-digit activation code by email and SMS |
-| POST   | `/verifyCode`         | No   | Verify the activation code                           |
-| POST   | `/setPassword`        | No   | Set the password and activate the account            |
+| POST   | `/verifyCode`         | No   | Verify the activation code and activate the account. Returns a `passwordToken` |
+| POST   | `/setPassword`        | No   | Body: `{ password, passwordToken }`. Set the first password; returns a login token |
 | POST   | `/login`              | No   | Log in and receive a token                           |
 | POST   | `/codeReq`            | No   | Request a password-reset code (email and SMS)        |
-| POST   | `/verifyRecoveryCode` | No   | Verify the password-reset code                       |
-| POST   | `/resetPassword`      | No   | Set a new password                                   |
+| POST   | `/verifyRecoveryCode` | No   | Body: `{ code, email }` (email required). Returns a `passwordToken` |
+| POST   | `/resetPassword`      | No   | Body: `{ password, confirmPassword, passwordToken }`. Returns a login token |
+
+**Password tickets.** Setting or resetting a password needs the
+`passwordToken` returned by the matching verify step: a random, single-use
+ticket valid for 15 minutes (only its SHA-256 hash is stored). Without it,
+anyone who knew an email address or Patient ID could set the password.
+`/verifyUser` no longer returns a token, and no auth route accepts a `role`.
 
 Phone numbers and SMS delivery are described in [phone-verification.md](./phone-verification.md).
 
@@ -25,13 +40,25 @@ Phone numbers and SMS delivery are described in [phone-verification.md](./phone-
 
 | Method | Path                            | Auth | Purpose                         |
 | ------ | ------------------------------- | ---- | ------------------------------- |
-| POST   | `/api/bookAppointment`          | Yes  | Book an appointment             |
+| POST   | `/api/bookAppointment`          | Yes  | Book an appointment. Body: `{ doctor, department, date: "YYYY-MM-DD", time: "9:30 AM", reason, shareRecords? }` |
 | GET    | `/api/appointments`             | Yes  | List the user's appointments    |
-| PATCH  | `/api/appointment/:id/reschedule` | Yes | Reschedule an appointment      |
-| PATCH  | `/api/appointment/:id/cancel`   | Yes  | Cancel an appointment           |
+| PATCH  | `/api/appointment/:id/reschedule` | Yes | Body: `{ date, time }`. Only confirmed, upcoming appointments, at least `RESCHEDULE_NOTICE_DAYS` (7) days ahead |
+| PATCH  | `/api/appointment/:id/cancel`   | Yes  | Cancel a confirmed, upcoming appointment |
 | PATCH  | `/api/appointment/:id/urgency`  | Doctor | Change the urgency on one of the doctor's own appointments. Body: `{ level, reason? }` |
 
-Appointment status is `pending`, `confirmed`, or `cancelled`.
+Appointment status is `pending`, `confirmed`, `completed` or `cancelled`.
+Confirmed appointments whose date has passed are set to `completed` when
+appointments are read (`completePastAppointments`). `GET /api/appointments`
+returns them in date and time order.
+
+**Slots and booking rules.** A doctor's weekly hours (`availableTime`) are split
+into `APPOINTMENT_SLOT_MINUTES` (30) slots in the hospital's time zone
+(`HOSPITAL_TIMEZONE`, default `Africa/Lagos`). Booking and rescheduling check,
+in order: the doctor exists and is taking appointments; the date isn't in the
+past; the doctor works that weekday; the time is one of their slots; it hasn't
+already started; and nobody else holds it. A unique index on confirmed
+`{ doctor, date, time }` stops two simultaneous bookings. A taken slot is a
+409 with `errors: [{ field: "time" }]`. The stored department is the doctor's.
 
 Booking runs safety triage on the reason for the visit and stores
 `urgency: { level, reason, source, updatedAt }`, where `level` is `routine`,
@@ -44,8 +71,9 @@ response also has a `safetyMessage` to show the patient.
 | ------ | --------------------- | ---- | --------------------------------- |
 | GET    | `/api/doctors`        | No   | List doctors                      |
 | GET    | `/api/doctors/:id`    | No   | Get one doctor                    |
+| GET    | `/api/doctors/:id/slots?date=YYYY-MM-DD[&appointmentId=]` | Yes | `{ date, day, slotMinutes, slots: [{ time, available, reason? }] }`. `reason` is `booked` or `past`. Pass `appointmentId` when rescheduling so its own slot counts as free |
 | GET    | `/api/departments`    | No   | List departments                  |
-| GET    | `/api/department/:id` | No   | Get one department                |
+| GET    | `/api/departments/:id` | No  | Get one department (the document itself). `/api/department/:id` still works |
 | GET    | `/api/activities`     | Yes  | The user's recent activity        |
 | POST   | `/api/aiChat`         | Optional | Send a message to the AI assistant. Body: `{ message, sessionId? }`. Returns `{ reply, sessionId, urgency }`. Rate limited. See [ai.md](./ai.md) |
 | GET    | `/api/aiChat/sessions` | Patient, Doctor | The user's 20 most recent saved chats: `{ sessionId, title, updatedAt }[]`. Title is the start of the first message |
@@ -106,10 +134,28 @@ The login response now includes `user.img`.
 | GET    | `/api/flags`              | Admin, Doctor | List flags, newest first. Filters: `?status=new\|reviewed`, `?level=urgent\|emergency`. Doctors only see their own patients' flags |
 | PATCH  | `/api/flags/:id/review`   | Admin, Doctor | Mark a flag reviewed. Body: `{ note? }` |
 
+## Admin
+
+| Method | Path                               | Auth  | Purpose |
+| ------ | ---------------------------------- | ----- | ------- |
+| GET    | `/api/admin/doctors`               | Admin | Every doctor profile and its linked login: `{ id, name, department, account: { id, userId, email } | null }[]` |
+| PUT    | `/api/admin/doctors/:id/account`   | Admin | Link a login to the doctor profile. Body: `{ account }` (User ID or email). Sets that login's role to `doctor`; the previous linked login goes back to `user` |
+| DELETE | `/api/admin/doctors/:id/account`   | Admin | Unlink. The login goes back to the `user` role |
+
+Until the admin portal exists, use the script, which calls the same code:
+
+```powershell
+npm run link:doctor -w @medibridge/server -- --list
+npm run link:doctor -w @medibridge/server -- --doctor "Dr. Elizabeth" --account D001
+```
+
+Role changes take effect the next time the person signs in.
+
 ## Not built yet
 
-- Doctor and admin portals. Role checks exist (`requireRole`), but doctor
-  accounts must be linked to a doctor profile (`Doctor.userId`) by hand for now.
+- Doctor and admin portals. Sign-in already sends doctors to `/doctorDashboard`
+  and admins to `/adminDashboard` (placeholders), and link doctor logins with
+  the admin endpoints or `npm run link:doctor`.
 - A `completed` appointment status, and endpoints for doctors to write medical
   records and visit notes.
 - Real-time message delivery. The portal checks for new messages every 10
@@ -130,7 +176,8 @@ Rate limiting uses [express-rate-limit](https://github.com/express-rate-limit/ex
 | `/api/auth/*`          | 20 per 15 minutes          | IP                    |
 | `POST /api/auth/login` | 5 **failed** logins per 15 minutes | User ID (any IP) |
 | `POST /api/auth/verifyUser`, `/codeReq` | 5 code requests per 15 minutes | User ID or email (any IP) |
-| `/api/aiChat`          | 10 per minute              | IP                    |
+| `POST /api/aiChat`     | 10 per minute              | IP                    |
+| `PATCH /api/account/password` | 5 per 15 minutes    | Account               |
 
 Limits stack: a login request counts against all three login-related rows.
 IPv6 clients are grouped by /56 block so rotating addresses does not bypass

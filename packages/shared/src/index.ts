@@ -4,7 +4,7 @@
 
 export type UserRole = "user" | "doctor" | "admin";
 
-export type AppointmentStatus = "pending" | "confirmed" | "cancelled";
+export type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
 export type ActivityType = "confirmed" | "rescheduled" | "cancelled";
 

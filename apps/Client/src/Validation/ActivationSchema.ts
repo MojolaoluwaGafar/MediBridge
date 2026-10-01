@@ -31,9 +31,8 @@ export const setPasswordSchema = z.object({
   terms: z.boolean().refine(val => val === true, {
     message: "You must agree to the Terms and Privacy Policy",
   }).optional(),
-  email: z.string().email("Invalid email address").optional(),
-  Email: z.string().email("Invalid email address").optional(),
-  UserId: z.string().optional(),
+  // Added on submit from the verify-code step; not a form field.
+  passwordToken: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -60,9 +59,8 @@ export const resetPasswordSchema = z.object({
     .string()
     .min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
-  email: z.string().email("Invalid email address").optional(),
-  Email: z.string().email("Invalid email address").optional(),
-  UserId: z.string().optional(),
+  // Added on submit from the verify-code step; not a form field.
+  passwordToken: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],

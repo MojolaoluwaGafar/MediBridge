@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Department from "../Models/Department";
 import { ServiceError } from "./errors";
 
@@ -6,6 +7,7 @@ export function listDepartments() {
 }
 
 export async function getDepartment(id: string) {
+  if (!mongoose.Types.ObjectId.isValid(id)) throw new ServiceError(404, "Department not found.");
   const department = await Department.findById(id);
   if (!department) throw new ServiceError(404, "Department not found.");
   return department;

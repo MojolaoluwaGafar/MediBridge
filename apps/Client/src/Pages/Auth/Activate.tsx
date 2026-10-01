@@ -10,21 +10,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { VerifyUserSchema, type VerifyUserInput } from '../../Validation/ActivationSchema'
 import { useVerifyUser } from '../../Hooks/Auth/useVerifyUser'
 import { showToast } from "../../utils/toastHelper";
+import { apiErrorMessage } from '../../utils/apiError'
 
 export default function Activate() {
     const { register, handleSubmit, formState : { errors }, reset } = useForm<VerifyUserInput>({
         resolver : zodResolver(VerifyUserSchema)
     })
 
-    const { verifyUser, loading, error} = useVerifyUser()
+    const { verifyUser, loading } = useVerifyUser()
 
     const navigate = useNavigate()
 
     const submit = async (formData : VerifyUserInput)=>{
         try {
             const result = await verifyUser(formData);
-            localStorage.setItem("authToken", result.token)
-            console.log("ID Verification success :", result);
             showToast(result.message || "Verification code sent to your email", "success")
             reset()
             navigate("/verifyActivation", { state : {
@@ -32,9 +31,8 @@ export default function Activate() {
                 expiresAt : result.expiresAt,
                 phone : result.phone
             }})
-        } catch (err : any) {
-            const message = err.response?.data?.error || err.response?.data?.message || error || "ID Verification failed";
-            console.error("ID Verification error:", message )
+        } catch (err) {
+            const message = apiErrorMessage(err, "ID Verification failed");
             showToast(message, "error")
         }     
     }

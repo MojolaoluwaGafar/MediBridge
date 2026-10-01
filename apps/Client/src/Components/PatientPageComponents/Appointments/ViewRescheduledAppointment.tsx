@@ -1,6 +1,7 @@
 import Button from "../../Button";
 import { X } from "lucide-react";
 import type { IAppointment } from "../../../types/appointment";
+import { formatDateString } from "../../../utils/formatDate";
 
 type Props = {
   appointment: IAppointment;
@@ -9,6 +10,8 @@ type Props = {
   onBack: () => void;
   onClose: () => void;
   onRescheduled: () => void;
+  saving?: boolean;
+  error?: string | null;
 };
 
 export default function ViewRescheduledAppointment({
@@ -18,16 +21,12 @@ export default function ViewRescheduledAppointment({
   onBack,
   onClose,
   onRescheduled,
+  saving = false,
+  error = null,
 }: Props) {
   const { doctor, department, reason } = appointment;
 
-  const parsedDate = new Date(newDate);
-
-  const formattedDate = parsedDate.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
+  const formattedDate = formatDateString(newDate);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -95,6 +94,8 @@ export default function ViewRescheduledAppointment({
 
           </div>
 
+          {error && <p role="alert" className="mt-6 text-sm text-red-600">{error}</p>}
+
           <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-end">
 
             <Button
@@ -107,7 +108,8 @@ export default function ViewRescheduledAppointment({
 
             <Button
               type="button"
-              content="Confirm Appointment"
+              content={saving ? "Saving…" : "Confirm Appointment"}
+              disabled={saving}
               onClick={onRescheduled}
               className="w-full sm:w-auto"
             />

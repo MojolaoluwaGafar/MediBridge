@@ -29,6 +29,9 @@ export interface IUser extends Document {
   activationCodeExpires? : Date | null;
   ProfileImage? : string | null;
   ProfileImageId? : string | null;
+  PasswordTicketHash? : string | null;
+  PasswordTicketPurpose? : "activation" | "recovery" | null;
+  PasswordTicketExpires? : Date | null;
 }
 
 const UserSchema: Schema<IUser> = new Schema<IUser>({
@@ -94,6 +97,23 @@ const UserSchema: Schema<IUser> = new Schema<IUser>({
   },
   ProfileImageId : {
     type : String,
+    default : null
+  },
+  // Proof that the patient just verified an emailed code, required to set or
+  // reset the password. Only a SHA-256 hash is stored, it is single-use and
+  // expires after a few minutes. See authService.issuePasswordTicket.
+  PasswordTicketHash : {
+    type : String,
+    default : null,
+    index : { sparse : true },
+  },
+  PasswordTicketPurpose : {
+    type : String,
+    enum : ["activation", "recovery", null],
+    default : null
+  },
+  PasswordTicketExpires : {
+    type : Date,
     default : null
   },
 });

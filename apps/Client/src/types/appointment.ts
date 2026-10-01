@@ -8,7 +8,8 @@ export interface IAppointment {
     time: string;
     reason: string;
     shareRecords?: boolean;
-    status: "pending" | "confirmed" | "cancelled";
+    // "completed" is set by the server once the appointment day has passed.
+    status: "pending" | "confirmed" | "completed" | "cancelled";
     createdAt: string;
     updatedAt: string;
     userId?: string;

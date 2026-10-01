@@ -53,3 +53,14 @@ export const searchableDate = (value: string | Date) => {
     date.toISOString().slice(0, 10),
   ].join(" ");
 };
+
+// Today in the patient's own time zone as "2026-10-01", for date inputs.
+export const todayDateString = (now = new Date()) =>
+  `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+// "2026-10-01" -> "Thursday, October 1, 2026", without the time-zone shift
+// that `new Date("2026-10-01")` causes (it is read as UTC midnight).
+export const formatDateString = (date: string) => {
+  const [y, m, d] = date.split("-").map(Number);
+  return formatLongDate(new Date(y, m - 1, d));
+};

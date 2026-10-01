@@ -16,6 +16,10 @@ import PatientPage from './Pages/PatientPage'
 import Error404 from './Components/Error404'
 import ProtectRoute from './Components/ProtectRoute'
 import AboutPage from './Pages/AboutPage'
+import PrivacyPage from './Pages/PrivacyPage'
+import TermsPage from './Pages/TermsPage'
+import ContactPage from './Pages/ContactPage'
+import PortalComingSoon from './Pages/PortalComingSoon'
 
 import UnderConstruction from "./Components/UnderConstruction"
 
@@ -38,7 +42,13 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/departments" element={<DepartmentPage />} />
       <Route path="/support" element={<SupportPage />} />
-      <Route path='/patientDashboard' element={<ProtectRoute><PatientPage /></ProtectRoute>} />
+      <Route path='/patientDashboard' element={<ProtectRoute roles={["user"]}><PatientPage /></ProtectRoute>} />
+      {/* Placeholders until the doctor and admin portals are built. */}
+      <Route path='/doctorDashboard' element={<ProtectRoute roles={["doctor"]}><PortalComingSoon portal="Doctor" /></ProtectRoute>} />
+      <Route path='/adminDashboard' element={<ProtectRoute roles={["admin"]}><PortalComingSoon portal="Admin" /></ProtectRoute>} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/contact" element={<ContactPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/underConstruction" element={<UnderConstruction />} />
       

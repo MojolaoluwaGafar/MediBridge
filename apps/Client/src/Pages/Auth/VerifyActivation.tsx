@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { verifyCodeSchema, type VerifyCodeInput } from '../../Validation/ActivationSchema'
 import { useVerifyCode } from '../../Hooks/Auth/useVerifyCode'
 import { showToast } from "../../utils/toastHelper";
+import { apiErrorMessage } from '../../utils/apiError'
 import api from '../../API'
 
 export default function VerifyActivation() {
@@ -18,7 +19,7 @@ export default function VerifyActivation() {
         defaultValues : { code : "" }
     })
     
-    const { verifyCode, loading, error } = useVerifyCode();
+    const { verifyCode, loading } = useVerifyCode();
     const location = useLocation();
     const navigate = useNavigate();
     const inputRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -132,13 +133,14 @@ export default function VerifyActivation() {
             if (email) {
                 localStorage.setItem("activationEmail", email);
             }
-            console.log("Code verification success :", result);
             showToast(result.message || "Code verified successfully", "success");
             reset();
             setOtp(["", "", "", "", "", ""]);
-            navigate("/setPassword", { state: { email } })
-        } catch (err : any) {
-            const message = err.response?.data?.error || err.response?.data?.message || error || "Code Verification failed";
+            // The ticket proves the code was verified; it only lives in router
+            // state, so it is gone if the page is reloaded.
+            navigate("/setPassword", { state: { email, passwordToken: result.passwordToken } })
+        } catch (err) {
+            const message = apiErrorMessage(err, "Code Verification failed");
             console.error("Code verification error :", message)
             showToast(message, "error");
         }
@@ -158,9 +160,8 @@ export default function VerifyActivation() {
                 setValue("code", "");
                 inputRefs.current[0]?.focus();
             }
-        } catch (err : any) {
-            console.log("Failed to resend :", err);
-            showToast(err.response?.data?.error || "Failed to resend code", "error");
+        } catch (err) {
+            showToast(apiErrorMessage(err, "Failed to resend code"), "error");
         }
     };
 

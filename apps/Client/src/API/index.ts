@@ -30,7 +30,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
-    if (status === 401 || status === 403) {
+    const url: string = error.config?.url ?? "";
+    // 401 means the session is missing or expired, so sign out. 403 means
+    // "signed in, but not allowed" and is left to the page to show. Auth
+    // routes (a wrong password at login) answer 401 too, so skip those.
+    if (status === 401 && !url.startsWith("/api/auth/")) {
       clearAuth();
       window.location.replace("/login");
     }

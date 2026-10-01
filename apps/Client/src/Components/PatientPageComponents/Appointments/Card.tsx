@@ -1,86 +1,89 @@
-import React, { useMemo } from "react"
+import React from "react"
 import Button from "../../Button";
 import { CalendarDays, Clock } from "lucide-react";
 import type { IAppointment } from "../../../types/appointment";
+import { usePatientTab } from "../../../Hooks/Portal/usePatientTab";
+import { displayStatus, isCompleted, isUpcoming } from "../../../utils/appointmentStatus";
+import { formatDateString } from "../../../utils/formatDate";
+import Avatar from "../../PortalComponents/Avatar";
 
 type AppointmentCardProps = {
     appointment: IAppointment;
     onView: (appointment: IAppointment) => void;
-    onReschedule : (appointment: IAppointment)=> void;
-    onCancel: (id: string) => void;
+    onReschedule: (appointment: IAppointment) => void;
+    onCancel: (appointment: IAppointment) => void;
+    // Opens booking again, e.g. for a follow-up after a completed visit.
+    onBookAgain?: () => void;
 };
 
-function Card({ appointment, onView, onReschedule, onCancel }: AppointmentCardProps) {
-    const { doctor, date, time, status } = appointment;
-    const formattedDate = useMemo(
-    () =>
-        new Date(date).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-        }),
-    [date]
-    );
+// Actions depend on where the appointment is: upcoming ones can be changed,
+// completed ones lead to the visit's records, cancelled ones can be rebooked.
+function Card({ appointment, onView, onReschedule, onCancel, onBookAgain }: AppointmentCardProps) {
+    const { doctor, date, time } = appointment;
+    const { goToTab } = usePatientTab();
+    const status = displayStatus(appointment);
+    const upcoming = isUpcoming(appointment);
+    const completed = isCompleted(appointment);
 
-    const normalizedStatus = status.toLowerCase();
-
-    const avatar = doctor.docImg ?? "/images/default-avatar.png"
-    
     return (
-    <div className="w-full relative rounded-xl border border-[#D7D7D7] p-5 lg:h-40 flex justify-between items-center">
-        <div className="flex flex-col lg:flex lg:flex-row gap-2">
-            <img className="w-21.75 h-21.5 rounded-[4.01px] object-cover" src={avatar} alt={doctor.docName} />
+    <div className="w-full relative rounded-xl border border-[#D7D7D7] p-5 flex flex-col gap-5">
+        <span className={`absolute top-3 right-3 rounded-3xl px-4 h-9 flex items-center justify-center text-sm ${status.className}`}>
+            {status.label}
+        </span>
+
+        <div className="flex flex-col sm:flex-row gap-3 pr-28">
+            <Avatar name={doctor.docName} image={doctor.docImg} size="xl" />
             <div className="flex flex-col gap-1">
-                <h1 className="text-[#141313] fontOutfit font-medium text-[20px]">{doctor.docName}</h1>
+                <h2 className="text-[#141313] fontOutfit font-medium text-[20px]">{doctor.docName}</h2>
                 <p className="text-[#605E5E] fontOutfit font-light text-[16px]">
                     {doctor.department} Department
                 </p>
-                <div className="flex gap-2 text-[14px] text-[#605E5E]">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-[14px] text-[#605E5E]">
                     <p className="flex items-center gap-2">
-                        <CalendarDays size={18} color="#605E5E" /> {formattedDate}
+                        <CalendarDays size={18} color="#605E5E" /> {formatDateString(date)}
                     </p>
                     <p className="flex items-center gap-2">
                         <Clock size={18} color="#605E5E" /> {time}
                     </p>
                 </div>
             </div>
-            
-            <span className="absolute top-3 right-3 bg-[#E0F8F3] text-[#28574E] rounded-3xl h-10 w-26 flex items-center justify-center">
-                {status}
-            </span>
-        <div className="flex flex-col lg:flex lg:flex-row w-full items-center gap-5 mt-8">
-            <Button type="button" width="w-full lg:w-[164px]" content="View Details" onClick={() => onView(appointment)} />
-              {(normalizedStatus === "confirmed" || normalizedStatus === "upcoming") && (
-                <>
-                <Button type="button" width="w-full lg:w-[164px]" content="Reschedule" variant="outline"
-                onClick={() => onReschedule(appointment)}/>
+        </div>
 
-                <button className="text-[#3E3B3B] fontOutfit font-normal" type="button">Message</button>
-                
-                <button type="button" className="text-red-600 font-normal" onClick={()=> onCancel(appointment._id)}>Cancel</button>
+        <div className="flex flex-col lg:flex-row w-full lg:items-center gap-3 lg:gap-5">
+            <Button type="button" size="sm" width="w-full lg:w-[164px]" content="View Details" onClick={() => onView(appointment)} />
+
+            {upcoming && (
+                <>
+                    <Button type="button" size="sm" width="w-full lg:w-[164px]" content="Reschedule" variant="outline"
+                        onClick={() => onReschedule(appointment)} />
+                    {doctor._id && (
+                        <button className="text-[#3E3B3B] fontOutfit font-normal hover:underline" type="button"
+                            onClick={() => goToTab("messages", { doctor: doctor._id! })}>
+                            Message
+                        </button>
+                    )}
+                    <button type="button" className="text-red-600 font-normal hover:underline" onClick={() => onCancel(appointment)}>
+                        Cancel
+                    </button>
                 </>
             )}
-             {normalizedStatus === "completed" && (
-              <>
-                <Button
-                  type="button"
-                  width="w-full lg:w-[164px]"
-                  content="View Summary"
-                  onClick={() => onView(appointment)}
-                />
 
-                <Button
-                  type="button"
-                  width="w-full lg:w-[164px]"
-                  variant="outline"
-                  content="Book Follow Up"
-                />
-              </>
+            {completed && (
+                <>
+                    <Button type="button" size="sm" width="w-full lg:w-[164px]" variant="outline" content="Visit records"
+                        onClick={() => goToTab("medRecords")} />
+                    {onBookAgain && (
+                        <Button type="button" size="sm" width="w-full lg:w-[164px]" variant="outline" content="Book Follow Up"
+                            onClick={onBookAgain} />
+                    )}
+                </>
+            )}
+
+            {appointment.status === "cancelled" && onBookAgain && (
+                <Button type="button" size="sm" width="w-full lg:w-[164px]" variant="outline" content="Book again"
+                    onClick={onBookAgain} />
             )}
         </div>
-        </div>
-
     </div>
   );
 }

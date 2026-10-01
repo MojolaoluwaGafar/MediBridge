@@ -11,6 +11,8 @@ import { useLogin } from '../../Hooks/Auth/useLogin'
 import { showToast } from '../../utils/toastHelper'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../Hooks/Auth/useAuth'
+import { homePathFor } from '../../utils/roleHome'
+import { apiErrorMessage } from '../../utils/apiError'
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
@@ -20,7 +22,7 @@ export default function Login() {
     resolver: zodResolver(loginSchema)
   })
 
-  const { login, loading, error } = useLogin()
+  const { login, loading } = useLogin()
   const { login: loginUser } = useAuth();
 
   const togglePassword = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -34,10 +36,9 @@ export default function Login() {
       loginUser(result.token, result.user)
       showToast(result.message || "Login successful", "success");
       reset()
-      navigate("/patientDashboard")
+      navigate(homePathFor(result.user.role), { replace: true })
     } catch (err) {
-      console.error("Login error :", err, error);
-      showToast(error || "Login failed", "error")
+      showToast(apiErrorMessage(err, "Login failed"), "error")
     }
   }
 

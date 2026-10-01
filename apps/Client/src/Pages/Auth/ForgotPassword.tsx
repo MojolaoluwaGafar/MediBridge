@@ -18,7 +18,6 @@ export default function ForgotPassword() {
     const submit = async (formData : ForgotPasswordInput ) => {
         try {
             const result = await codeReq(formData);
-            console.log("Code request successful:", result);
             localStorage.setItem("resetEmail", result.email);
             showToast(result.message, "success");
             reset()

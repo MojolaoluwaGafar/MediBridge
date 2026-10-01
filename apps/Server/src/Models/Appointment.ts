@@ -2,6 +2,9 @@ import mongoose, { Schema, Document } from "mongoose";
 import type { IDoctor } from "../types/doctor";
 import type { TriageLevel } from "../Services/triage";
 
+export const APPOINTMENT_STATUSES = ["pending", "confirmed", "completed", "cancelled"] as const;
+export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
+
 export interface IAppointmentUrgency {
     level: TriageLevel;
     reason: string;
@@ -16,7 +19,8 @@ export interface IAppointment extends Document {
     time: string;
     reason: string;
     shareRecords?: boolean;
-    status: "pending" | "confirmed" | "cancelled";
+    // "completed" is set once the appointment's date has passed (or later, by the doctor).
+    status: AppointmentStatus;
     createdAt: Date;
     updatedAt: Date;
     userId?: mongoose.Types.ObjectId;
@@ -56,7 +60,7 @@ const AppointmentSchema: Schema<IAppointment> = new Schema({
     },
     status: {
         type: String,
-        enum : ["pending", "confirmed", "cancelled"],
+        enum : APPOINTMENT_STATUSES,
         default: "pending"
     },
     urgency: {
@@ -74,6 +78,15 @@ const AppointmentSchema: Schema<IAppointment> = new Schema({
     }
     },
     { timestamps: true }
+);
+
+// One patient per doctor per slot. Only confirmed appointments hold a slot, so
+// a cancelled one frees it. This is the final guard against two people
+// booking the same slot at the same moment; the service checks first so the
+// patient gets a clear message.
+AppointmentSchema.index(
+    { doctor: 1, date: 1, time: 1 },
+    { unique: true, partialFilterExpression: { status: "confirmed" }, name: "one_confirmed_booking_per_slot" }
 );
 
 export const Appointment = mongoose.model<IAppointment>("Appointment", AppointmentSchema);

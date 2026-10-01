@@ -10,6 +10,9 @@ import { setPasswordSchema, type SetPasswordInput } from '../../Validation/Activ
 import { useSetPassword } from '../../Hooks/Auth/useSetPassword'
 import { showToast } from '../../utils/toastHelper'
 import { Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '../../Hooks/Auth/useAuth'
+import { homePathFor } from '../../utils/roleHome'
+import { apiErrorMessage } from '../../utils/apiError'
 
 export default function SetPassword() {
     const [showPassword, setShowPassword] = useState<boolean>(false)
@@ -19,31 +22,31 @@ export default function SetPassword() {
         resolver : zodResolver(setPasswordSchema)
     })
 
-    const { setPassword, loading, error } = useSetPassword()
+    const { setPassword, loading } = useSetPassword()
     
     const navigate = useNavigate()
     const location = useLocation()
-    const emailFromState = location.state?.email
-    const email = emailFromState || localStorage.getItem("activationEmail") || localStorage.getItem("resetEmail") || ""
+    const { login } = useAuth()
+    // From the verify-code step. Without it the server refuses, so send the
+    // patient back to verify their code.
+    const passwordToken: string | undefined = location.state?.passwordToken
 
     const submit = async(formData : SetPasswordInput)=>{
+        if (!passwordToken) {
+            showToast("Please verify your activation code first.", "error");
+            navigate("/activate");
+            return;
+        }
         try {
-            const result = await setPassword({ ...formData, email });
-            console.log("Password set successfully :", result);
-            if (result) {
-            localStorage.setItem("authToken", result.token)
-            localStorage.setItem("user", JSON.stringify(result.user))  
-            }
+            const result = await setPassword({ ...formData, passwordToken });
+            // Through AuthContext, so the portal sees the session straight away.
+            login(result.token, result.user)
+            localStorage.removeItem("activationEmail")
             showToast(result.message || "Password set successfully", "success");
             reset()
-            navigate("/patientDashboard", { state : {
-                firstname : result.user.firstname,
-                lastname : result.user.lastname,
-                email : result.user.email,
-            }})
+            navigate(homePathFor(result.user.role), { replace : true })
         } catch (err) {
-            console.error("Set Password error:", err, error)
-            showToast(error || "Failed to set password", "error");
+            showToast(apiErrorMessage(err, "Failed to set password"), "error");
         }
     }
     

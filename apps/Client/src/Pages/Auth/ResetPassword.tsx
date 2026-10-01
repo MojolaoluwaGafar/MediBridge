@@ -9,6 +9,9 @@ import { resetPasswordSchema, type ResetPasswordInput } from "../../Validation/A
 import { showToast } from "../../utils/toastHelper";
 import { useResetPassword } from '../../Hooks/Auth/useResetPassword';
 import { Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '../../Hooks/Auth/useAuth'
+import { homePathFor } from '../../utils/roleHome'
+import { apiErrorMessage } from '../../utils/apiError'
 
 export default function ResetPassword() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
@@ -18,27 +21,30 @@ export default function ResetPassword() {
   resolver: zodResolver(resetPasswordSchema)
   });
 
-  const { resetPassword, loading, error } = useResetPassword();
+  const { resetPassword, loading } = useResetPassword();
 
   const navigate = useNavigate();
   const location = useLocation();
-  const emailFromState = location.state?.email;
-  const email = emailFromState || localStorage.getItem("resetEmail") || localStorage.getItem("activationEmail") || "";
+  const { login } = useAuth();
+  // From the verify-code step; the server refuses a reset without it.
+  const passwordToken: string | undefined = location.state?.passwordToken;
 
   const submit = async(formData : ResetPasswordInput)=>{
+    if (!passwordToken) {
+      showToast("Please verify your reset code first.", "error");
+      navigate("/forgotPassword");
+      return;
+    }
     try {
-      const result = await resetPassword({ ...formData, email });
-      console.log("Password reset successful :", result);
-      localStorage.setItem("authToken", result.token)
+      const result = await resetPassword({ ...formData, passwordToken });
+      // Through AuthContext, so the portal sees the session straight away.
+      login(result.token, result.user)
+      localStorage.removeItem("resetEmail")
       showToast(result.message || "Password reset successful", "success");
       reset()
-      navigate("/patientDashboard", { state : {
-        firstname : result.user.firstname,
-        lastname : result.user.lastname
-      }})
+      navigate(homePathFor(result.user.role), { replace : true })
     } catch (err) {
-      console.error("Reset Password error:", err, error)
-      showToast(error || "Failed to reset password", "error");
+      showToast(apiErrorMessage(err, "Failed to reset password"), "error");
     }
   }
   
