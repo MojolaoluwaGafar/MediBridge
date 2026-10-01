@@ -21,7 +21,9 @@ export default function VerifyRecovery() {
     const navigate = useNavigate();
     const inputRefs = useRef<(HTMLInputElement | null)[]>([])
 
-    const { email, expiresAt } = location.state || {};
+    const { email, expiresAt, phone: initialPhone } = location.state || {};
+    // Masked number the code was also texted to; null when email only.
+    const [phone, setPhone] = useState<string | null>(initialPhone ?? null);
         useEffect(() => {
         if (!email) {
             navigate("/login");
@@ -146,6 +148,7 @@ export default function VerifyRecovery() {
         try {
             const response = await api.post("/api/auth/codeReq", { email });
             showToast(response.data.message, "success");
+            setPhone(response.data?.phone ?? null);
             if (response.data?.expiresAt) {
                 setExpiryTime(response.data.expiresAt)
                 const newTime = Math.floor((new Date(response.data.expiresAt).getTime() - Date.now()) / 1000);
@@ -177,7 +180,7 @@ export default function VerifyRecovery() {
 
         <form onSubmit={handleSubmit(submit)} className='text-center'>
             <label htmlFor="otp" className="text-[18px] font-semibold py-3">OTP Verification</label>
-            <p>Enter the 6-digit code sent to {email}</p>
+            <p>Enter the 6-digit code sent to {email}{phone ? ` and by SMS to ${phone}` : ""}</p>
 
             <div className="flex gap-5 py-7">
                 {otp.map((digit,index)=>{

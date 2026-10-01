@@ -1,5 +1,19 @@
 import mongoose, { Schema, Document } from "mongoose";
 import validator from "validator";
+import { normalizePhone } from "../Utils/phone";
+
+// Leaves an invalid number as typed so the validator below can reject it.
+const toE164 = (value: string) => normalizePhone(value) ?? value;
+
+// Rejects invalid numbers when a phone is set or changed. Existing records
+// with an old unparseable number still save (e.g. during activation) until
+// the number is corrected; `npm run migrate:phones` lists them.
+const phoneValidator = (path: "PhoneNumber" | "RegisteredNumber") =>
+  function (this: unknown, value: string) {
+    const doc = this as mongoose.Document | undefined;
+    if (doc && typeof doc.isModified === "function" && !doc.isNew && !doc.isModified(path)) return true;
+    return normalizePhone(value) !== null;
+  };
 
 export interface IUser extends Document {
   UserId: string;
@@ -36,14 +50,19 @@ const UserSchema: Schema<IUser> = new Schema<IUser>({
     lowercase: true,
     validate: [validator.isEmail, "Invalid Email"],
   },
+  // Phone numbers are stored in E.164 (+2348031234567) however they are typed.
   PhoneNumber : {
     type : String,
     required : true,
+    set : toE164,
+    validate : [phoneValidator("PhoneNumber"), "Invalid phone number"],
   },
   RegisteredNumber: {
     type: String,
     required: true,
     unique: true,
+    set : toE164,
+    validate : [phoneValidator("RegisteredNumber"), "Invalid phone number"],
   },
   Password: {
     type: String,

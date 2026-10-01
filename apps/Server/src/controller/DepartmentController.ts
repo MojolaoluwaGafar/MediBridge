@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
-import Department from "../Models/Department";
+import { listDepartments, getDepartment } from "../Services/departmentService";
+import { isServiceError } from "../Services/errors";
 
 export const getDepartments = async (
   _req: Request,
   res: Response
 ) => {
   try {
-    const departments = await Department.find().sort({ field: 1 });
+    const departments = await listDepartments();
 
     res.status(200).json(departments);
   } catch (error) {
@@ -19,16 +20,13 @@ export const getDepartmentById = async (
   res: Response
 ) => {
   try {
-    const department = await Department.findById(req.params.id);
-
-    if (!department) {
-      return res.status(404).json({
-        message: "Department not found.",
-      });
-    }
+    const department = await getDepartment(req.params.id as string);
 
     res.status(200).json(department);
   } catch (error) {
+    if (isServiceError(error)) {
+      return res.status(error.status).json({ message: error.message });
+    }
     res.status(500).json({
       message: "Failed to fetch department.",
     });

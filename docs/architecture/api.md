@@ -11,13 +11,15 @@ or `admin`.
 
 | Method | Path                  | Auth | Purpose                                              |
 | ------ | --------------------- | ---- | ---------------------------------------------------- |
-| POST   | `/verifyUser`         | No   | Match Patient ID, email and registered number; email a 6-digit activation code |
+| POST   | `/verifyUser`         | No   | Match Patient ID, email and registered phone (any format); send a 6-digit activation code by email and SMS |
 | POST   | `/verifyCode`         | No   | Verify the activation code                           |
 | POST   | `/setPassword`        | No   | Set the password and activate the account            |
 | POST   | `/login`              | No   | Log in and receive a token                           |
-| POST   | `/codeReq`            | No   | Request a password-reset code                        |
+| POST   | `/codeReq`            | No   | Request a password-reset code (email and SMS)        |
 | POST   | `/verifyRecoveryCode` | No   | Verify the password-reset code                       |
 | POST   | `/resetPassword`      | No   | Set a new password                                   |
+
+Phone numbers and SMS delivery are described in [phone-verification.md](./phone-verification.md).
 
 ## Appointments
 
@@ -61,3 +63,26 @@ response also has a `safetyMessage` to show the patient.
 - A `completed` appointment status, consultation notes, and messaging.
 - Admin create, update and delete endpoints for doctors, patients and
   departments.
+
+## Rate limits
+
+Rate limiting uses [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit)
+(`apps/Server/src/middlewares/RateLimiter.ts`). A client over a limit gets
+`429` with `{ success: false, message }`, plus standard `RateLimit` and
+`Retry-After` headers.
+
+| Routes                 | Limit                      | Counted by            |
+| ---------------------- | -------------------------- | --------------------- |
+| `/api/*`               | 100 per minute             | IP                    |
+| `/api/auth/*`          | 20 per 15 minutes          | IP                    |
+| `POST /api/auth/login` | 5 **failed** logins per 15 minutes | User ID (any IP) |
+| `POST /api/auth/verifyUser`, `/codeReq` | 5 code requests per 15 minutes | User ID or email (any IP) |
+| `/api/aiChat`          | 10 per minute              | IP                    |
+
+Limits stack: a login request counts against all three login-related rows.
+IPv6 clients are grouped by /56 block so rotating addresses does not bypass
+limits. A patient locked out of login can still reset their password.
+
+Counts are held in memory, which is correct for one server instance. Before
+running several instances, give the limiters a shared store (for example
+`rate-limit-redis`) in `baseOptions`.
