@@ -54,23 +54,25 @@ npm run seed:departments -w @medibridge/server
 
 Both apps deploy to Render from one Blueprint, [`render.yaml`](./render.yaml):
 
-| Service             | App           | Render type | Build (from repo root) | Start / output |
-| ------------------- | ------------- | ----------- | ---------------------- | -------------- |
-| `medibridge-api`    | `apps/Server` | Web service | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
-| `medibridge-client` | `apps/Client` | Static site | `npm ci --include=dev && npm run build -w @medibridge/client` | `apps/Client/dist` |
+| Service                | App           | Render type | Build (from repo root) | Start / output |
+| ---------------------- | ------------- | ----------- | ---------------------- | -------------- |
+| `medibridge-api-v2`    | `apps/Server` | Web service | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
+| `medibridge-client-v2` | `apps/Client` | Static site | `npm ci --include=dev && npm run build -w @medibridge/client` | `apps/Client/dist` |
 
-In Render, choose **New → Blueprint** and pick this repository (or open the
-existing Blueprint and click **Manual Sync**). Render asks for the secret
-values (database URL, API keys) when it creates each service, then deploys the
-`test` branch automatically once CI passes. Both build from the repo root
+In Render, choose **New → Blueprint** and pick this repository. The `-v2`
+names keep this deployment separate from the first one (`medibridge-api`,
+`medibridge-client`); delete those services and their Blueprint once the new
+ones work. Render asks for the secret values (database URL, API keys) when it
+creates each service, then deploys the `test` branch automatically once CI
+passes. Both build from the repo root
 because the workspaces share one `package-lock.json`.
 
 The two services are connected by one value: when Render asks for
-`VITE_BASE_URL` on **medibridge-client**, enter the API's URL,
-`https://medibridge-api.onrender.com` (check the API's page in the dashboard;
+`VITE_BASE_URL` on **medibridge-client-v2**, enter the API's URL,
+`https://medibridge-api-v2.onrender.com` (check the API's page in the dashboard;
 Render adds a suffix if that name was taken). Vite builds it into the app, so
 changing it later needs a client redeploy. The API already accepts requests
-from `medibridge-client*.onrender.com`; set `CLIENT_ORIGIN` on the API only if
+from `medibridge-client-v2*.onrender.com`; set `CLIENT_ORIGIN` on the API only if
 the client gets a custom domain.
 
 The client was previously hosted on Vercel; those URLs are still allowed by the

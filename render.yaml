@@ -2,23 +2,24 @@
 # (apps/Client, a static site). Both deploy from the `test` branch once CI
 # passes on it.
 #
-# Deploy: Render Dashboard -> New -> Blueprint -> pick this repository (or, if
-# the Blueprint already exists, open it and click "Manual Sync" to add the
-# client). Render asks for every "sync: false" value when it first creates a
-# service; anything left empty can be set later under that service's
-# Environment tab.
+# Fresh deploy: Render Dashboard -> New -> Blueprint -> pick this repository.
+# The "-v2" service names keep it from clashing with the first deployment
+# (medibridge-api / medibridge-client); delete those, and their old Blueprint,
+# once this one works. Render asks for every "sync: false" value when it
+# creates each service; anything left empty can be set later under that
+# service's Environment tab.
 #
 # Connecting the two takes one value, entered when Render asks for it:
 #   - client VITE_BASE_URL = the API's public URL. Render names it after the
-#     service: https://medibridge-api.onrender.com (check the API's page in
+#     service: https://medibridge-api-v2.onrender.com (check the API's page in
 #     the dashboard; Render adds a suffix if the name was already taken).
-# The API already allows https://medibridge-client*.onrender.com, so no CORS
+# The API already allows https://medibridge-client-v2*.onrender.com, so no CORS
 # setting is needed. Render can't hand one service's public URL to another
 # automatically (fromService only gives the private-network host).
 
 services:
   - type: web
-    name: medibridge-api
+    name: medibridge-api-v2
     runtime: node
     plan: free
     region: frankfurt
@@ -59,7 +60,7 @@ services:
         generateValue: true
 
       # Only for a custom domain on the client, e.g. https://portal.example.com.
-      # medibridge-client*.onrender.com and *.vercel.app are allowed in code.
+      # medibridge-client-v2*.onrender.com and *.vercel.app are allowed in code.
       - key: CLIENT_ORIGIN
         sync: false
       # Any other allowed browser origins, comma separated.
@@ -123,7 +124,7 @@ services:
   # The React app, served as static files. Static sites are free and don't
   # sleep, unlike free web services.
   - type: web
-    name: medibridge-client
+    name: medibridge-client-v2
     runtime: static
     branch: test
     autoDeployTrigger: checksPass
@@ -164,7 +165,7 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
-      # The API's public URL: https://medibridge-api.onrender.com unless Render
+      # The API's public URL: https://medibridge-api-v2.onrender.com unless Render
       # added a suffix. Changing it later needs a client redeploy.
       - key: VITE_BASE_URL
         sync: false

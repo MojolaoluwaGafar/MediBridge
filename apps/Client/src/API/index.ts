@@ -4,7 +4,7 @@ import { AxiosError } from "axios";
 import { clearAuth } from "../utils/authToken";
 
 // The API's address, from VITE_BASE_URL at build time. A bare host
-// ("medibridge-api.onrender.com") or a trailing slash is accepted, since both
+// ("medibridge-api-v2.onrender.com") or a trailing slash is accepted, since both
 // are easy to paste into Render's dashboard.
 const rawBaseUrl = (import.meta.env.VITE_BASE_URL ?? "").trim().replace(/\/+$/, "");
 export const API_BASE_URL = rawBaseUrl && !/^https?:\/\//i.test(rawBaseUrl) ? `https://${rawBaseUrl}` : rawBaseUrl;

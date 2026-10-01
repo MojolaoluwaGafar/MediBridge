@@ -55,9 +55,10 @@ const isAllowedOrigin = (origin: string | undefined) => {
     return true;
   }
 
-  // The Render static site from render.yaml. Render adds a suffix when the
-  // name is taken, e.g. https://medibridge-client-ab12.onrender.com.
-  if (/^https:\/\/medibridge-client(-[a-z0-9]+)?\.onrender\.com$/i.test(origin)) {
+  // The Render static site from render.yaml (medibridge-client-v2; the older
+  // medibridge-client also matches). Render adds a suffix when a name is
+  // taken, e.g. https://medibridge-client-v2-ab12.onrender.com.
+  if (/^https:\/\/medibridge-client(-[a-z0-9]+)*\.onrender\.com$/i.test(origin)) {
     return true;
   }
 
