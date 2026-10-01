@@ -1,9 +1,10 @@
-# Render Blueprint for the MediBridge API (apps/Server).
-# The Client stays on Vercel (see README). Set VITE_BASE_URL there to this
-# service's URL, and add the Vercel URL to CORS_ORIGINS here if it isn't covered.
+# Render Blueprint for MediBridge: the API (apps/Server) and the web app
+# (apps/Client, a static site).
 #
 # Deploy: Render Dashboard -> New -> Blueprint -> pick this repository.
 # Render asks for every "sync: false" value on the first deploy.
+# Order on a first deploy: let the API deploy, copy its URL into the client's
+# VITE_BASE_URL, then redeploy the client (Vite reads it at build time).
 
 services:
   - type: web
@@ -69,4 +70,43 @@ services:
       - key: CLOUDINARY_API_KEY
         sync: false
       - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  - type: web
+    name: medibridge-client
+    runtime: static
+    branch: main
+    autoDeployTrigger: checksPass
+    # Built from the root for the same reason as the API: one shared lockfile.
+    buildCommand: npm ci --include=dev && npm run build -w @medibridge/client
+    staticPublishPath: apps/Client/dist
+    buildFilter:
+      paths:
+        - apps/Client/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    # The app uses client-side routing, so every path serves index.html
+    # (the same as apps/Client/vercel.json).
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # The API's public URL, e.g. https://medibridge-api.onrender.com
+      # (no trailing slash). Baked in at build time.
+      - key: VITE_BASE_URL
         sync: false

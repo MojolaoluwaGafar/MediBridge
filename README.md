@@ -52,16 +52,31 @@ npm run seed:departments -w @medibridge/server
 
 ## Deployment
 
-| App           | Platform | Root directory | Build           | Start / output |
-| ------------- | -------- | -------------- | --------------- | -------------- |
-| `apps/Client` | Vercel   | `apps/Client`  | `npm run build` | `dist`         |
-| `apps/Server` | Render   | repo root      | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
+| App           | Platform               | Build (from repo root) | Start / output |
+| ------------- | ---------------------- | ---------------------- | -------------- |
+| `apps/Server` | Render web service     | `npm ci --include=dev && npm run build -w @medibridge/server` | `npm run start -w @medibridge/server` |
+| `apps/Client` | Render static site     | `npm ci --include=dev && npm run build -w @medibridge/client` | `apps/Client/dist` |
 
-The Server is defined as a Render Blueprint in [`render.yaml`](./render.yaml).
+Both are defined as a Render Blueprint in [`render.yaml`](./render.yaml).
 In Render, choose **New → Blueprint** and pick this repository. Render asks for
 the secret values (database URL, API keys) on the first deploy, and then
-deploys `main` automatically once CI passes. The Server builds from the repo
-root because the workspaces share one `package-lock.json`.
+deploys `main` automatically once CI passes. Both build from the repo root
+because the workspaces share one `package-lock.json`.
+
+On the first deploy, the client needs the API's URL:
+
+1. Let `medibridge-api` finish deploying and copy its URL
+   (for example `https://medibridge-api.onrender.com`).
+2. Set it as `VITE_BASE_URL` on `medibridge-client` (no trailing slash) and
+   redeploy the client. Vite builds the URL into the app, so changing it
+   always needs a redeploy.
+
+The API already accepts requests from `medibridge-client*.onrender.com`. For a
+custom domain, add it to `CORS_ORIGINS` on the API.
+
+The Client can still be deployed to Vercel instead (root directory
+`apps/Client`, build `npm run build`, output `dist`, `vercel.json` handles
+routing). Set `VITE_BASE_URL` there the same way.
 
 ## Git workflow
 

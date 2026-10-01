@@ -43,6 +43,12 @@ const isAllowedOrigin = (origin: string | undefined) => {
     return true;
   }
 
+  // The Render static site from render.yaml. Render adds a suffix to the name
+  // if "medibridge-client" is taken, e.g. medibridge-client-ab12.onrender.com.
+  if (/^https:\/\/medibridge-client(-[a-z0-9]+)?\.onrender\.com$/i.test(origin)) {
+    return true;
+  }
+
   return /^(https?:\/\/)([\w.-]+\.)?(vercel\.app|app\.github\.dev)$/i.test(origin);
 };
 
