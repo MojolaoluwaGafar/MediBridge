@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { rateLimit, ipKeyGenerator } from "express-rate-limit";
-import { sendMessage } from "../controller/SupportController";
-import { optionalAuth, type AuthRequest } from "../middlewares/Auth";
+import { sendMessage, getChatSessions, getChatSession } from "../controller/SupportController";
+import { authMiddleware, optionalAuth, requireRole, type AuthRequest } from "../middlewares/Auth";
 
 const router = Router();
 
@@ -17,5 +17,8 @@ const chatLimiter = rateLimit({
 });
 
 router.post("/aiChat", optionalAuth, chatLimiter, sendMessage);
+// Signed-in users' saved conversations. Visitors' chats are never listed.
+router.get("/aiChat/sessions", authMiddleware, requireRole("user", "doctor"), getChatSessions);
+router.get("/aiChat/sessions/:sessionId", authMiddleware, requireRole("user", "doctor"), getChatSession);
 
 export default router;

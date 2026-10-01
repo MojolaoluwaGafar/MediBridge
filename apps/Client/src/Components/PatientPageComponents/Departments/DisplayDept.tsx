@@ -49,8 +49,15 @@ const departmentIcons: Record<string, ElementType> = {
 
 export default function DisplayDept({ searchTerm, selectedCategory = "All" }: Props) {
   const { data, loading } = useDepartments();
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // The page is remembered together with the filters it belongs to, so new
+  // search or filter values start again from page 1 without an extra render.
+  const filterKey = `${searchTerm}|${selectedCategory}`;
+  const [paging, setPaging] = useState({ filterKey, page: 1 });
+  const currentPage = paging.filterKey === filterKey ? paging.page : 1;
+  const setCurrentPage = (next: number | ((page: number) => number)) =>
+    setPaging({ filterKey, page: typeof next === "function" ? next(currentPage) : next });
 
   const departments = useMemo<DepartmentWithIcon[]>(() => {
     return (
@@ -82,11 +89,6 @@ export default function DisplayDept({ searchTerm, selectedCategory = "All" }: Pr
     const start = (currentPage - 1) * itemsPerPage;
     return filteredDepartments.slice(start, start + itemsPerPage);
   }, [filteredDepartments, currentPage]);
-
-  // reset page when filters change
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
 
   if (loading) {
     return <div className="py-8 text-center text-[#707070]">Loading departments...</div>;

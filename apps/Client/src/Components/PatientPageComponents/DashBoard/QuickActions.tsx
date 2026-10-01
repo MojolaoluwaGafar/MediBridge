@@ -3,7 +3,7 @@ import {
   Astroid,
   FileText,
 } from "lucide-react";
-import { useNavigate } from "react-router";
+import { usePatientTab } from "../../../Hooks/Portal/usePatientTab";
 type Props = {
   onBookAppointment: () => void;
 };
@@ -11,7 +11,7 @@ type Props = {
 export default function QuickActions({
   onBookAppointment,
 }: Props) {
-  const navigate = useNavigate()
+  const { goToTab } = usePatientTab()
   return (
     <div className="w-full lg:max-w-[391px] border border-[#D7D7D7] rounded-xl p-4 sm:p-5 md:p-6">
       <p className="pb-4 text-xl sm:text-2xl font-medium">
@@ -35,7 +35,7 @@ export default function QuickActions({
 
         <button
         onClick={()=> {
-          navigate("/support")
+          goToTab("aiSupport")
         }}
           type="button"
           className="w-full min-h-[60px] border border-[#E7E4E4] rounded-lg flex items-center gap-3 px-4 bg-white transition hover:bg-gray-50"
@@ -51,7 +51,7 @@ export default function QuickActions({
 
         <button
         onClick={()=>{
-          navigate("/underConstruction")
+          goToTab("medRecords")
         }}
           type="button"
           className="w-full min-h-[60px] border border-[#E7E4E4] rounded-lg flex items-center gap-3 px-4 bg-white transition hover:bg-gray-50"

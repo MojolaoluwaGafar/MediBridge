@@ -8,6 +8,9 @@ type Props = {
   variant?: "primary" | "primaryWBorder" | "secondary" | "outline",
   width?: string,
   disabled? : boolean,
+  // "md" is the original 52px button; "sm" is the compact one used in portal cards.
+  size?: "md" | "sm",
+  ariaLabel?: string,
 }
 
 export default function Button({
@@ -17,9 +20,15 @@ export default function Button({
   onClick,
   variant = "primary",
   width = "w-full",
-  disabled
+  disabled,
+  size = "md",
+  ariaLabel,
 }: Props) {
-  const baseStyles = "h-[52px] rounded-md text-[18px] cursor-pointer fontOutfit transition-colors duration-300";
+  const sizes: Record<string, string> = {
+    md: "h-[52px] text-[18px]",
+    sm: "h-10 px-4 text-sm",
+  };
+  const baseStyles = `${sizes[size]} inline-flex items-center justify-center gap-2 rounded-md cursor-pointer fontOutfit transition-colors duration-300`;
 
   const variants: Record<string, string> = {
     primary: "bg-[#28574E] text-white hover:bg-[#4f8379]",
@@ -36,6 +45,7 @@ export default function Button({
       onClick={onClick}
       className={`${baseStyles} ${variants[variant]} ${className || ""} ${width} ${disabled ? disabledStyles : ""}`}
       disabled={disabled}
+      aria-label={ariaLabel}
     >
       {content}
     </button>

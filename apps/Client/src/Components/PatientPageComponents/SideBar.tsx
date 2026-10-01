@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { PiSignOut } from "react-icons/pi";
+import { X } from "lucide-react";
+import Logo from "../../assets/MediBridgeLogo.svg";
 
 export interface SidebarTab {
   key: string;
@@ -8,75 +10,111 @@ export interface SidebarTab {
 }
 
 type Props = {
-  tabs: SidebarTab[];
+  tabs: readonly SidebarTab[];
   activeTab: string;
-  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+  onSelectTab: (key: string) => void;
   onLogout: () => void;
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+// Below the lg breakpoint the sidebar is a slide-in drawer opened from the top
+// bar; from lg up it is a fixed column beside the page.
 export default function Sidebar({
   tabs,
   activeTab,
-  setActiveTab,
+  onSelectTab,
   onLogout,
   isOpen,
   setIsOpen,
 }: Props) {
+  // While the drawer is open: Escape closes it and the page behind can't scroll.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    const previousOverflow = document.body.style.overflow;
+
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen, setIsOpen]);
+
   return (
     <>
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 lg:hidden"
           onClick={() => setIsOpen(false)}
+          aria-hidden="true"
         />
       )}
 
-      <div
+      <aside
+        id="patient-sidebar"
+        aria-label="Patient portal"
         className={`
-          fixed top-0 left-0 z-50
-          h-screen w-72
-          bg-white shadow-xl
+          fixed inset-y-0 left-0 z-50
+          w-72 max-w-[85vw]
+          bg-white
           flex flex-col
           p-6
+          overflow-y-auto
           transform transition-transform duration-300
-          ${
-            isOpen ? "translate-x-0" : "-translate-x-full"
-          }
+          ${isOpen ? "translate-x-0 shadow-xl" : "-translate-x-full"}
 
-          lg:static
+          lg:static lg:z-auto
           lg:translate-x-0
-          lg:h-auto
-          lg:w-72
-          lg:border-r
-          lg:border-[#E6EFF5]
-          lg:shadow-lg
+          lg:max-w-none lg:shrink-0
+          lg:shadow-none
         `}
       >
-        <nav className="flex flex-col gap-2 flex-1 mt-10 lg:mt-0">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab.key);
-                setIsOpen(false);
-              }}
-              className={`flex items-center gap-3 w-full min-h-[48px] px-4 rounded-md transition text-left
-                ${
-                  activeTab === tab.key
-                    ? "bg-[#28574E] text-white"
-                    : "text-[#605E5E] hover:bg-gray-100"
-                }`}
-            >
-              <span className="flex-shrink-0">{tab.icon}</span>
+        <div className="flex items-center justify-between pb-6 lg:hidden">
+          <img className="w-32" src={Logo} alt="MediBridge" />
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="rounded-md p-2 hover:bg-gray-100"
+            aria-label="Close menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
 
-              <span className="text-sm sm:text-base font-medium">
-                {tab.label}
-              </span>
-            </button>
-          ))}
+        <nav className="flex flex-col gap-2 flex-1">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                aria-current={isActive ? "page" : undefined}
+                onClick={() => {
+                  onSelectTab(tab.key);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center gap-3 w-full min-h-12 px-4 rounded-md transition text-left
+                  ${
+                    isActive
+                      ? "bg-[#28574E] text-white"
+                      : "text-[#605E5E] hover:bg-gray-100"
+                  }`}
+              >
+                <span className="shrink-0">{tab.icon}</span>
+
+                <span className="text-sm sm:text-base font-medium">
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
         </nav>
 
         <button
@@ -93,7 +131,7 @@ export default function Sidebar({
             Log out
           </span>
         </button>
-      </div>
+      </aside>
     </>
   );
 }

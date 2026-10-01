@@ -78,3 +78,14 @@ export const aiLimiter = rateLimit({
   limit: 10,
   message: "You're sending messages too quickly. Please wait a moment.",
 });
+
+// Changing the password from Account Settings: 5 attempts per 15 minutes per
+// account, so a stolen session can't be used to guess the current password.
+// Use after authMiddleware, which sets req.user.
+export const passwordChangeLimiter = rateLimit({
+  ...baseOptions,
+  windowMs: 15 * MINUTE,
+  limit: 5,
+  keyGenerator: (req: Request) => `password:${(req as Request & { user?: { id: string } }).user?.id ?? ipKeyGenerator(req.ip ?? "")}`,
+  message: "Too many attempts. Please wait 15 minutes and try again.",
+});

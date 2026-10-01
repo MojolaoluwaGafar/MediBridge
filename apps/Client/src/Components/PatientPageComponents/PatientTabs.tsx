@@ -14,34 +14,39 @@ export const patientTabs = [
     label: "Dashboard",
     icon: <LayoutDashboard />,
   },
-   {
-      key: "appointments",
-      label: "Appointments",
-      icon: <CalendarDays />,
-    },
-    {
-      key: "departments",
-      label: "Departments",
-      icon: <Hospital />,
-    },
-    {
-      key: "medRecords",
-      label: "Medical Records",
-      icon: <FileText />,
-    },
-    {
-      key: "messages",
-      label: "Messages",
-      icon: <MessageCircleMore />,
-    },
-    {
-      key: "aiSupport",
-      label: "AI Support",
-      icon: <Astroid />,
-    },
-    {
-      key: "settings",
-      label: "Account Settings",
-      icon: <Settings />,
-    },
-];
+  {
+    key: "appointments",
+    label: "Appointments",
+    icon: <CalendarDays />,
+  },
+  {
+    key: "departments",
+    label: "Departments",
+    icon: <Hospital />,
+  },
+  {
+    key: "medRecords",
+    label: "Medical Records",
+    icon: <FileText />,
+  },
+  {
+    key: "messages",
+    label: "Messages",
+    icon: <MessageCircleMore />,
+  },
+  {
+    key: "aiSupport",
+    label: "AI Support",
+    icon: <Astroid />,
+  },
+  {
+    key: "settings",
+    label: "Account Settings",
+    icon: <Settings />,
+  },
+] as const;
+
+export type PatientTabKey = (typeof patientTabs)[number]["key"];
+
+export const isPatientTab = (key: string | null): key is PatientTabKey =>
+  patientTabs.some((tab) => tab.key === key);

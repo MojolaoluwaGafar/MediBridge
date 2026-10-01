@@ -1,6 +1,6 @@
 import Button from "../../Button";
 import type { IAppointment } from "../../../types";
-import { useNavigate } from "react-router";
+import { usePatientTab } from "../../../Hooks/Portal/usePatientTab";
 type Props = {
   appointment: IAppointment;
   onClose: () => void;
@@ -17,7 +17,7 @@ export default function ViewAppointmentModal({
   });
 
   const avatar = appointment.doctor.docImg || "/images/default-avatar.png";
-   const navigate = useNavigate()
+  const { goToTab } = usePatientTab();
 
   return (
     <div
@@ -89,8 +89,10 @@ export default function ViewAppointmentModal({
           <Button
             type="button"
             content="Message Doctor"
-            onClick={()=> {
-              navigate("/UnderConstruction")
+            disabled={!appointment.doctor._id}
+            onClick={() => {
+              onClose();
+              goToTab("messages", { doctor: appointment.doctor._id ?? "" });
             }}
           />
         </div>
