@@ -122,3 +122,41 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+const HISTORY_RETURNED = 50;
+
+// The signed-in person's most recent conversation, so the portal chat can pick
+// up where they left off. "New chat" on the client simply stops sending this
+// sessionId; the next message starts a new session, which becomes the latest.
+export const getLatestSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const role = chatRoleFor(req.user?.role);
+    if (!role || role === "guest") {
+      return res.json({ sessionId: null, messages: [] });
+    }
+
+    const session = await ChatSession.findOne({
+      userId: new mongoose.Types.ObjectId(req.user!.id),
+      role,
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    if (!session) {
+      return res.json({ sessionId: null, messages: [] });
+    }
+
+    return res.json({
+      sessionId: session.sessionId,
+      messages: session.messages.slice(-HISTORY_RETURNED).map((m) => ({
+        role: m.role,
+        content: m.content,
+        level: m.level ?? null,
+        at: m.at,
+      })),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Could not load your conversation" });
+  }
+};

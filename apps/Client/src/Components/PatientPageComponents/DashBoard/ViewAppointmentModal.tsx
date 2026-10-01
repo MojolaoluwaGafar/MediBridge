@@ -1,6 +1,7 @@
 import Button from "../../Button";
 import type { IAppointment } from "../../../types";
 import { useNavigate } from "react-router";
+import { patientTabLink } from "../PatientTabs";
 type Props = {
   appointment: IAppointment;
   onClose: () => void;
@@ -89,8 +90,11 @@ export default function ViewAppointmentModal({
           <Button
             type="button"
             content="Message Doctor"
-            onClick={()=> {
-              navigate("/UnderConstruction")
+            onClick={() => {
+              // Doctors without an ID can't be messaged (e.g. a deleted profile).
+              if (appointment.doctor._id) {
+                navigate(patientTabLink("messages", { contact: appointment.doctor._id }));
+              }
             }}
           />
         </div>

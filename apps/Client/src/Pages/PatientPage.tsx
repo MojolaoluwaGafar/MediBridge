@@ -1,7 +1,5 @@
-// import UnderConstruction from "../Components/UnderConstruction"
-// import PagenotReady from "../Components/PatientPageComponents/PagenotReady"
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 
 import Footer from "../Components/Footer";
 import Dashboard from "../Components/PatientPageComponents/DashBoard/Dashboard";
@@ -11,15 +9,35 @@ import LogoutModal from "../Components/LogoutModal";
 import Sidebar from "../Components/PatientPageComponents/SideBar";
 import Topbar from "../Components/PatientPageComponents/TopBar";
 import { useAuth } from "../Hooks/Auth/useAuth";
-import { patientTabs } from "../Components/PatientPageComponents/PatientTabs";
+import {
+  patientTabs,
+  isPatientTab,
+  DEFAULT_PATIENT_TAB,
+  type PatientTabKey,
+} from "../Components/PatientPageComponents/PatientTabs";
 import Department from "../Components/PatientPageComponents/Departments/Department";
+import MedicalRecords from "../Components/PatientPageComponents/MedicalRecords/MedicalRecords";
+import Messages from "../Components/PatientPageComponents/Messages/Messages";
+import AISupport from "../Components/PatientPageComponents/AISupport/AISupport";
+import AccountSettings from "../Components/PatientPageComponents/Settings/AccountSettings";
 
 export default function PatientPage() {
   const navigate = useNavigate();
 
   const { user, logout } = useAuth();
 
-  const [activeTab, setActiveTab] = useState("dashboard");
+  // The active tab is in the URL (?tab=messages) so it survives a refresh, the
+  // back button works, and other pages can link straight to a tab.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab: PatientTabKey = isPatientTab(tabParam) ? tabParam : DEFAULT_PATIENT_TAB;
+
+  const setActiveTab = (tab: string) => {
+    if (!isPatientTab(tab) || tab === activeTab) return;
+    // Switching tabs drops the previous tab's own params (e.g. ?contact=).
+    setSearchParams(tab === DEFAULT_PATIENT_TAB ? {} : { tab });
+  };
+
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [departmentSearchTerm, setDepartmentSearchTerm] = useState("");
 
@@ -28,6 +46,13 @@ export default function PatientPage() {
 
   // User menu state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  // The top bar search is "Search condition, department...", so typing in it
+  // from any tab takes the patient to Departments with the results.
+  const handleTopbarSearch = (value: string) => {
+    setDepartmentSearchTerm(value);
+    setActiveTab("departments");
+  };
 
   const handleLogout = () => {
     logout();
@@ -43,23 +68,19 @@ export default function PatientPage() {
         return <Appointments />;
 
       case "departments":
-        return <Department searchTerm={departmentSearchTerm} setSearchTerm={setDepartmentSearchTerm} />
-        // return <PagenotReady />;
+        return <Department searchTerm={departmentSearchTerm} setSearchTerm={setDepartmentSearchTerm} />;
 
-      // case "medRecords":
-      //   return <p>Medical Records</p>;
+      case "medRecords":
+        return <MedicalRecords />;
 
-      // case "messages":
-      //   return <p>Messages</p>;
+      case "messages":
+        return <Messages />;
 
-      // case "aiSupport":
-      //   return <p>AI Support</p>;
+      case "aiSupport":
+        return <AISupport />;
 
-      // case "settings":
-      //   return <p>Settings</p>;
-
-      default:
-        return null;
+      case "settings":
+        return <AccountSettings />;
     }
   };
 
@@ -76,10 +97,10 @@ export default function PatientPage() {
           setIsUserMenuOpen={setIsUserMenuOpen}
           onLogout={() => setShowLogoutModal(true)}
           searchTerm={departmentSearchTerm}
-          setSearchTerm={setDepartmentSearchTerm}
+          setSearchTerm={handleTopbarSearch}
         />
 
-        <div className="container mx-auto flex flex-col lg:flex-row px-4 sm:px-6 lg:px-0">
+        <div className="container mx-auto flex flex-col lg:flex-row lg:min-h-[calc(100dvh-5rem)]">
 
           <Sidebar
             tabs={patientTabs}
@@ -90,7 +111,7 @@ export default function PatientPage() {
             setIsOpen={setIsSidebarOpen}
           />
 
-          <main className="flex-1 overflow-x-hidden p-4 sm:p-6 md:p-8 lg:p-10 bg-gray-50">
+          <main className="min-w-0 flex-1 bg-gray-50 px-4 py-6 sm:p-6 md:p-8 lg:p-10">
             {renderContent()}
           </main>
 

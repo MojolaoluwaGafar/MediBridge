@@ -43,11 +43,14 @@ symptoms all the time.
 
 ## What happens at each level
 
-| Level | Chat | Booking |
-| ----- | ---- | ------- |
-| `emergency` | The AI is **not** called. The patient gets a fixed reply telling them to call emergency services (`HOSPITAL_EMERGENCY_NUMBER`), and a flag is saved | The booking is saved with `urgency.level = "emergency"`, the patient is shown the same emergency message, and a flag is saved |
-| `urgent` | A flag is saved, and the AI is told to start by encouraging the person to get care today | The booking is marked urgent for the doctor, the patient sees a "get help if it gets worse" note, and a flag is saved |
-| `routine` | Normal reply | Normal booking |
+| Level | Chat | Booking | Patient → doctor message |
+| ----- | ---- | ------- | ------------------------ |
+| `emergency` | The AI is **not** called. The patient gets a fixed reply telling them to call emergency services (`HOSPITAL_EMERGENCY_NUMBER`), and a flag is saved | The booking is saved with `urgency.level = "emergency"`, the patient is shown the same emergency message, and a flag is saved | The message is still sent to the doctor, the patient is shown the emergency message, and a flag is saved (`source: "message"`) |
+| `urgent` | A flag is saved, and the AI is told to start by encouraging the person to get care today | The booking is marked urgent for the doctor, the patient sees a "get help if it gets worse" note, and a flag is saved | The message is sent, the patient is told the doctor may not see it straight away and where to get care today, and a flag is saved |
+| `routine` | Normal reply | Normal booking | Normal message |
+
+The portal shows a coloured notice on AI replies to `urgent` and `emergency`
+messages, on both the public Support page and the portal's AI Support tab.
 
 Flags are stored in the `FlaggedMessage` collection with the session or
 appointment they came from, and a status of `new` or `reviewed`. Admins see all
@@ -59,6 +62,11 @@ Each conversation is stored in `ChatSession`, and the last 12 messages are sent
 to the AI so it can follow the conversation. The client sends back the
 `sessionId` it received. A session is only reused by the same person in the
 same role; otherwise a new one starts.
+
+Signed-in patients and doctors can reopen their latest conversation with
+`GET /api/aiChat/latest` (the portal's AI Support tab does this on load).
+"New Chat" in the portal just stops sending the old `sessionId`, so the next
+message starts a new session, which then becomes the latest.
 
 Chat sessions and flags contain health information. Decide on a retention
 period before launch; nothing is deleted automatically yet.

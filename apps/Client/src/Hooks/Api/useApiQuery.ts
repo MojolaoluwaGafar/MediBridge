@@ -125,7 +125,9 @@ export function useApiQuery<
   useEffect(() => {
     if (!enabled) return;
 
-    void fetchData(...([] as unknown as TArgs));
+    // Failures are already in `error`; catching here stops React StrictMode's
+    // double effect ("Request already in progress") from logging as unhandled.
+    fetchData(...([] as unknown as TArgs)).catch(() => {});
   }, [enabled, fetchData]);
 
   const reset = useCallback(() => {

@@ -9,6 +9,7 @@ type Props = {
     value? : string,
     pattern? : string,
     maxLength? : number,
+    autoComplete? : string,
     inputMode? : "search" | "email" | "tel" | "text" | "url" | "none" | "numeric" | "decimal" | undefined,
     onChange? : (e : React.ChangeEvent<HTMLInputElement>)=> void;
     onKeyDown? : (e: React.KeyboardEvent<HTMLInputElement>)=> void;
