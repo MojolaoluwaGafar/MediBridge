@@ -1,7 +1,6 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import type { AuthRequest } from "../middlewares/Auth";
-import { Activity } from "../Models/Activity";
-import mongoose from "mongoose";
+import { getRecentActivities } from "../Services/activityService";
 
 export const getActivities = async (req: AuthRequest, res: Response) => {
   try {
@@ -9,9 +8,7 @@ export const getActivities = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const activities = await Activity.find({ userId: new mongoose.Types.ObjectId(req.user.id) })
-      .sort({ timestamp: -1 })
-      .limit(10);
+    const activities = await getRecentActivities(req.user.id);
 
     return res.status(200).json({ success: true, activities });
   } catch (error: any) {

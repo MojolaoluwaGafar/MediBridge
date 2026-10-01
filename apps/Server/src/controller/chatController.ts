@@ -45,7 +45,7 @@ export const sendMessage = async (req: Request, res: Response) => {
       reply,
     });
   } catch (error) {
-    console.error(error);
+    req.log.error({ err: error }, "AI chat failed");
 
     return res.status(500).json({
       error: "AI integration failed",

@@ -19,7 +19,7 @@ export const sendMessage = async (
 
     return res.json({ reply });
   } catch (err) {
-    console.error(err);
+    req.log.error({ err }, "AI support chat failed");
     return res.status(500).json({
       message: "AI integration failed",
     });

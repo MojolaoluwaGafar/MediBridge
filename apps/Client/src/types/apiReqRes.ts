@@ -12,6 +12,9 @@ export interface IVerifyUserRes {
     role: string;
   };
   expiresAt : string;
+  // Masked number the code was also texted to (e.g. "+234 *** *** 4567"),
+  // or null when it went by email only.
+  phone? : string | null;
   token: string;
 }
 
@@ -42,6 +45,7 @@ export interface CodeReqResponse {
   success: boolean;
   message: string;
   email : string;
+  phone? : string | null;
   expiresAt : string;
 }
 

@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import dotenv from "dotenv"
+import { logger } from "../Utils/logger"
 dotenv.config()
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
@@ -12,7 +13,7 @@ export async function initGroqModels() {
     availableModels = response.data.map((m: any) => m.id);
     // console.log("Available Groq models:", availableModels);
   } catch (err) {
-    console.error("Failed to fetch Groq models:", err);
+    logger.error({ err }, "Failed to fetch Groq models");
   }
 }
 
@@ -23,7 +24,7 @@ export function pickModel(preferred: string): string {
   const fallbacks = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma-7b-it",  "mixtral-8x7b-32768",];
   for (const model of fallbacks) {
     if (availableModels.includes(model)) {
-      console.log("Using fallback model:", model);
+      logger.info({ model }, "Using fallback Groq model");
       return model;
     }
   }

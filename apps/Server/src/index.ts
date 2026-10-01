@@ -8,9 +8,15 @@ import BookingRoutes from "./Routes/BookingRoutes"
 import DoctorsRoutes from "./Routes/DoctorsRoutes"
 import ActivityRoutes from "./Routes/ActivityRoutes"
 import SupportRoutes from "./Routes/SupportRoutes"
+import { logger, httpLogger } from "./Utils/logger"
+import { apiLimiter, authLimiter, loginAccountLimiter, codeRequestAccountLimiter, aiLimiter } from "./middlewares/RateLimiter"
 dotenv.config()
 const app : Application = express()
 
+// Render puts one proxy in front of the app; trusting it makes req.ip the real
+// client IP, which the rate limiter keys on.
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1))
+app.use(httpLogger)
 app.use(express.json())
 
 const configuredOrigins = (process.env.CORS_ORIGINS || "")
@@ -46,7 +52,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    console.warn("Blocked CORS origin:", origin);
+    logger.warn({ origin }, "Blocked CORS origin");
     return callback(null, false);
   },
   credentials: true,
@@ -58,6 +64,11 @@ app.use(cors(corsOptions));
 app.get("/", (req : Request , res : Response)=>{  
     res.status(200).json({ success : true, message : "MediBridge Server running..."})
 })
+app.use("/api", apiLimiter)
+app.use("/api/auth", authLimiter)
+app.post("/api/auth/login", loginAccountLimiter)
+app.post(["/api/auth/verifyUser", "/api/auth/codeReq"], codeRequestAccountLimiter)
+app.use("/api/aiChat", aiLimiter)
 app.use("/api/auth", Authroutes)
 app.use("/api", BookingRoutes)
 app.use("/api", DoctorsRoutes)
@@ -69,21 +80,21 @@ const startServer = async () => {
     try {
         connectDB()
     
-        console.log("starting server");
+        logger.info("Starting server");
         const PORT : string | undefined = process.env.PORT
         app.listen(PORT, ()=>{
-            console.log(`MediBridge Server is running at http://localhost:${PORT}`);
-            
+            logger.info(`MediBridge Server is running at http://localhost:${PORT}`);
+
         })
     } catch (error) {
-        console.error("Startup error",error);
+        logger.error({ err: error }, "Startup error");
     }
 }
 process.on("uncaughtException", (err : any) => {
-  console.error("Uncaught Exception:", err.stack || err);
+  logger.fatal({ err }, "Uncaught exception");
 });
 process.on("unhandledRejection", (err : any) => {
-  console.error("Unhandled Rejection:", err.stack || err);
+  logger.error({ err }, "Unhandled rejection");
 });
 startServer()
 

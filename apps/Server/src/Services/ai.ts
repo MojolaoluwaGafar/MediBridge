@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logger } from "../Utils/logger";
 
 const USE_GROQ = true;
 
@@ -20,7 +21,10 @@ export async function sendToAI(message: string): Promise<string> {
     );
     return response.data.choices[0].message.content; 
     } catch (error : any) {
-    console.error("Groq error:", error.response?.data || error.message);
+    logger.error(
+      { status: error.response?.status, details: error.response?.data, message: error.message },
+      "Groq request failed"
+    );
     throw new Error("AI integration failed");
         }
   } else {

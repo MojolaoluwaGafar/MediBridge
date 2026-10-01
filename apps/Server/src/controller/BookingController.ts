@@ -1,10 +1,19 @@
-import mongoose from "mongoose";
-import { Request, Response } from "express";
+import { Response } from "express";
 import { BookingSchema } from "../Validation/BookingSchema";
-import { Appointment, IAppointment } from "../Models/Appointment";
 import type { AuthRequest } from "../middlewares/Auth";
-import { Activity } from "../Models/Activity";
-import { IDoctor } from "../types/doctor";
+import * as appointmentService from "../Services/appointmentService";
+import { isServiceError } from "../Services/errors";
+
+function sendError(res: Response, error: any) {
+  if (isServiceError(error)) {
+    return res.status(error.status).json({ success: false, message: error.message });
+  }
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    error: error.message,
+  });
+}
 
 export const bookAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -25,39 +34,15 @@ export const bookAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const { department, doctor, date, time, reason, shareRecords } = parsed.data;
-
-    const appointment = await Appointment.create({
-      department,
-      doctor : new mongoose.Types.ObjectId(doctor),
-      date,
-      time,
-      reason,
-      shareRecords,
-      status: "confirmed",
-      userId: new mongoose.Types.ObjectId(req.user.id),
-      createdAt: new Date(),
-    });
-
-    const populatedAppointment = await Appointment.findById(appointment._id).populate("doctor").lean<IAppointment>()
-
-    await Activity.create({
-      userId: req.user.id,
-      type: "confirmed",
-      message: `${populatedAppointment?.department} with ${(populatedAppointment?.doctor as IDoctor).docName} – ${date}`,
-    });
+    const appointment = await appointmentService.bookAppointment(req.user.id, parsed.data);
 
     return res.status(201).json({
       success: true,
       message: "Appointment booked successfully",
-      appointment: populatedAppointment,
+      appointment,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -67,20 +52,14 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const appointments = await Appointment.find({
-      userId: new mongoose.Types.ObjectId(req.user.id),
-    }).sort({ date: 1, time: 1 }).populate("doctor")
+    const appointments = await appointmentService.listAppointments(req.user.id);
 
     return res.status(200).json({
       success: true,
       appointments,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -96,41 +75,8 @@ export const rescheduleAppointment = async (
       });
     }
 
-    const id = req.params.id as string;
     const { date, time } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid appointment ID",
-      });
-    }
-
-    const appointment = await Appointment.findById(id)
-      .where("userId")
-      .equals(req.user.id)
-      .populate("doctor");
-
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
-    }
-
-    appointment.date = date;
-    appointment.time = time;
-    appointment.status = "confirmed";
-
-    await appointment.save();
-
-    await Activity.create({
-      userId: req.user.id,
-      type: "rescheduled",
-      message: `${appointment.department} with ${
-        (appointment.doctor as IDoctor).docName
-      } – ${date}`,
-    });
+    const appointment = await appointmentService.rescheduleAppointment(req.user.id, req.params.id as string, date, time);
 
     return res.status(200).json({
       success: true,
@@ -138,11 +84,7 @@ export const rescheduleAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -158,41 +100,7 @@ export const cancelAppointment = async (
       });
     }
 
-    const id = req.params.id as string;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid appointment ID",
-      });
-    }
-
-    const appointment = await Appointment.findById(id).where("userId").equals(req.user.id).populate("doctor");
-
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
-    }
-
-    if (appointment.status.toLowerCase() === "cancelled") {
-      return res.status(400).json({
-        success: false,
-        message: "Appointment has already been cancelled",
-      });
-    }
-
-    appointment.status = "cancelled";
-    await appointment.save();
-
-    await Activity.create({
-      userId: req.user.id,
-      type: "cancelled",
-      message: `${appointment.department} with ${
-        (appointment.doctor as IDoctor).docName
-      } – ${appointment.date}`,
-    });
+    const appointment = await appointmentService.cancelAppointment(req.user.id, req.params.id as string);
 
     return res.status(200).json({
       success: true,
@@ -200,10 +108,6 @@ export const cancelAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };

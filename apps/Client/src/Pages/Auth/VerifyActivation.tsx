@@ -23,7 +23,9 @@ export default function VerifyActivation() {
     const navigate = useNavigate();
     const inputRefs = useRef<(HTMLInputElement | null)[]>([])
     
-    const { email, expiresAt } = location.state || {};
+    const { email, expiresAt, phone: initialPhone } = location.state || {};
+    // Masked number the code was also texted to; null when email only.
+    const [phone, setPhone] = useState<string | null>(initialPhone ?? null);
     useEffect(() => {
         if (!email) {
             navigate("/activate");
@@ -146,6 +148,7 @@ export default function VerifyActivation() {
         try {
             const response = await api.post("/api/auth/codeReq", { email });
             showToast(response.data.message, "success");
+            setPhone(response.data?.phone ?? null);
             if (response.data?.expiresAt) {
                 setExpiryTime(response.data.expiresAt)
                 const newTime = Math.floor((new Date(response.data.expiresAt).getTime() - Date.now()) / 1000);
@@ -180,7 +183,7 @@ export default function VerifyActivation() {
             <p className='flex items-center gap-2'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#E1E3E3] text-[#3E3B3B]'>3</span> Set Up</p>
         </div>
         <h1 className="text-[28px] font-semibold pt-5">Verify your account</h1>
-        <p className="pb-5 text-[#757575] text-[18px]">We’ve sent a 6-digit verification code to your email to verify your account.</p>
+        <p className="pb-5 text-[#757575] text-[18px]">We’ve sent a 6-digit verification code to your email{phone ? ` and by SMS to ${phone}` : ""} to verify your account.</p>
 
         <div className="flex gap-5 py-7">
             {otp.map((digit,index)=>{

@@ -29,7 +29,8 @@ export default function Activate() {
             reset()
             navigate("/verifyActivation", { state : {
                 email : result.user.email,
-                expiresAt : result.expiresAt
+                expiresAt : result.expiresAt,
+                phone : result.phone
             }})
         } catch (err : any) {
             const message = err.response?.data?.error || err.response?.data?.message || error || "ID Verification failed";
@@ -80,7 +81,7 @@ export default function Activate() {
   {errors.Email && <p className="text-red-500">{errors.Email.message}</p>}
 
   <label className="py-2 font-semibold" htmlFor="number">Registered Phone Number</label>
-  <Input {...register("RegisteredNumber")} id="number" className="my-3 w-full" type="tel" placeholder="(+234) 000-0000" />
+  <Input {...register("RegisteredNumber")} id="number" className="my-3 w-full" type="tel" placeholder="0803 123 4567 or +234 803 123 4567" />
   {errors.RegisteredNumber && <p className="text-red-500">{errors.RegisteredNumber.message}</p>}
 
   <Button

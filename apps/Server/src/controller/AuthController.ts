@@ -1,71 +1,67 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
-import { User } from "../Models/User";
-import { RegisterInput, registerSchema,VerifyCodeInput, verifyCodeSchema,setPasswordSchema, SetPasswordInput, loginSchema,LoginInput, forgotPasswordSchema, ForgotPasswordInput, resetPasswordSchema, ResetPasswordInput } from "../Validation/registerSchema";
+import type { ZodError } from "zod";
+import { registerSchema, verifyCodeSchema, setPasswordSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../Validation/registerSchema";
 import { generateToken } from './../Utils/GenerateToken';
 import { JWTPayLoad } from "../middlewares/Auth";
-import { sendActivationCode } from './../Utils/SendActivationEmail';
-import crypto from "crypto"
 import type { AuthRequest } from "../middlewares/Auth";
-import { sendResetCode } from './../Utils/SendResetCode';
+import { maskPhone } from "../Utils/phone";
+import type { IUser } from "../Models/User";
+import * as authService from "../Services/authService";
+import { isServiceError } from "../Services/errors";
 
-function generateActivationCode(): string {
-  return crypto.randomInt(100000, 999999).toString();
+function validationErrors(error: ZodError) {
+    return {
+        errors: error.issues.map((issue) => ({
+            field: issue.path.join("."),
+            message: issue.message,
+        })),
+    };
+}
+
+function sendError(res: Response, error: any) {
+    if (isServiceError(error)) {
+        return res.status(error.status).json({ error: error.message });
+    }
+    return res.status(500).json({ error: error.message });
+}
+
+function tokenFor(user: IUser, role: string = user.role) {
+    const payload : JWTPayLoad = {
+        id : user._id.toString(),
+        role
+    }
+    return generateToken(payload)
+}
+
+function codeSentMessage(emailMessage: string, phone: string | null, smsSent: boolean): string {
+  return smsSent && phone ? `${emailMessage} and to your phone ending in ${phone.slice(-4)}` : emailMessage;
 }
 
 
 export const VerifyUser = async (req: Request, res: Response) => {
   try {
     const parsed = registerSchema.safeParse(req.body);
-
     if (!parsed.success) {
-      return res.status(400).json({
-        errors: parsed.error.issues.map((issue) => ({
-          field: issue.path.join("."),
-          message: issue.message,
-        })),
-      });
+      return res.status(400).json(validationErrors(parsed.error));
     }
 
-    const data : RegisterInput = parsed.data;
-    const { UserId, Email, RegisteredNumber } = data
+    const { UserId, Email, RegisteredNumber } = parsed.data
+    const { user, phone, smsSent } = await authService.startActivation(UserId, Email, RegisteredNumber)
 
-    const user = await User.findOne({ UserId, Email, RegisteredNumber})
-    if (!user) {
-        return res.status(404).json({
-            error : "Patient not found",
-        })
-    }
-    if (user.isActive) {
-        return res.status(400).json({
-            error : "Patient Account already activated"
-        })
-    }
-    
-    const code = generateActivationCode();
-    user.activationCode = code;
-    user.activationCodeExpires = new Date(Date.now() + 5 * 60 * 1000);
-    await user.save();
-    
-    await sendActivationCode(Email,user.FirstName,code)
-    const payload : JWTPayLoad = {
-        id : user._id.toString(),
-        role: req.body.role || "user"
-    }
-    const token = generateToken(payload)
     res.status(200).json({
             success : true,
-            message : "User verified successfully, Activation Code sent to email",
+            message : codeSentMessage("User verified successfully. Activation code sent to your email", phone, smsSent),
             user : {
                 id : user._id,
                 email : user.Email,
                 role : user.role
             },
+            phone : smsSent && phone ? maskPhone(phone) : null,
             expiresAt : user.activationCodeExpires,
-            token
+            token : tokenFor(user, req.body.role || "user")
         })
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -74,55 +70,12 @@ export const verifyCode = async (req : AuthRequest, res : Response) => {
     try {
         const parsed = verifyCodeSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                errors: parsed.error.issues.map(issue => ({
-                    field: issue.path.join("."),
-                    message: issue.message,
-                })),
-            });
+            return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const data : VerifyCodeInput = parsed.data;
-        const { code, email, Email, UserId } = data
+        const { code, email, Email, UserId } = parsed.data
+        const user = await authService.activateAccount({ id: req.user?.id, email: email || Email, UserId }, code)
 
-        let user = null;
-
-        if (req.user?.id) {
-            user = await User.findById(req.user.id);
-        } else if (email || Email) {
-            user = await User.findOne({ Email: email || Email });
-        } else if (UserId) {
-            user = await User.findOne({ UserId });
-        }
-
-        if (!user) {
-            return res.status(404).json({
-                error : "Patient not found"
-            })
-        }
-
-        if (user.activationCode !== code) {
-            return res.status(400).json({
-                error : "Invalid code"
-            })
-        }
-        if (!user.activationCodeExpires) {
-            return res.status(400).json({
-                error : "No activation code expiry set"
-            })
-        }
-        if (user.activationCodeExpires < new Date()) {
-            return res.status(400).json({
-                error  : "Code expired"
-            })
-        }
-
-        user.isActive = true;
-        user.activationCode = null;
-        user.activationCodeExpires = null;
-
-        await user.save();
-        
         return res.status(200).json({
             success : true,
             message : "Code verified successfully, account activated. Please, set a password",
@@ -133,9 +86,7 @@ export const verifyCode = async (req : AuthRequest, res : Response) => {
             }
         })
     } catch (error : any) {
-        return res.status(500).json({
-            error : error.message
-        })
+        return sendError(res, error)
     }
 }
 
@@ -143,41 +94,11 @@ export const SetPassword = async (req : AuthRequest, res : Response) => {
     try {
         const parsed = setPasswordSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                errors: parsed.error.issues.map(issue => ({
-                    field: issue.path.join("."),
-                    message: issue.message,
-                })),
-            });
+            return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const data : SetPasswordInput =  parsed.data
-        const { password, email, Email, UserId } = data
-        const normalizedEmail = (email || Email || "").trim().toLowerCase();
-
-        let user = null;
-
-        if (req.user?.id) {
-            user = await User.findById(req.user.id);
-        } else if (normalizedEmail) {
-            user = await User.findOne({ Email: normalizedEmail });
-        } else if (UserId) {
-            user = await User.findOne({ UserId });
-        }
-
-        if (!user) {
-            return res.status(404).json({
-                error : "Patient not found"
-            })
-        }
-        user.Password = await bcrypt.hash(password, 12)
-        await user.save();
-
-        const payload : JWTPayLoad = {
-            id : user._id.toString(),
-            role : user.role
-        }
-        const token = generateToken(payload)
+        const { password, email, Email, UserId } = parsed.data
+        const user = await authService.setPassword({ id: req.user?.id, email: email || Email, UserId }, password)
 
         return res.status(200).json({
             success : true,
@@ -189,12 +110,10 @@ export const SetPassword = async (req : AuthRequest, res : Response) => {
                 lastname : user.LastName,
                 role : user.role,
             },
-            token
+            token : tokenFor(user)
         })
     } catch (error : any) {
-        return res.status(500).json({
-            error : error.message
-        })
+        return sendError(res, error)
     }
 }
 
@@ -202,40 +121,11 @@ export const login = async (req : Request, res : Response) => {
     try {
         const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                errors: parsed.error.issues.map(issue => ({
-                    field: issue.path.join("."),
-                    message: issue.message,
-                })),
-            });
-        }
-        const data : LoginInput = parsed.data;
-        const { UserId, password } = data;
-
-        const user = await User.findOne({ UserId });
-        if (!user) {
-            return res.status(404).json({
-                error : "User not found"
-            })
-        }
-        if (!user.Password) {
-            return res.status(400).json({
-                error : "No Password set for this account"
-            })
+            return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const passwordMatch = await bcrypt.compare(password, user.Password);
-        if (!passwordMatch) {
-            return res.status(401).json({
-                error  : "Invalid Credentials"
-            })
-        };
-
-        const payload : JWTPayLoad = {
-            id : user._id.toString(),
-            role : user.role
-        }
-        const token = generateToken(payload);
+        const { UserId, password } = parsed.data;
+        const user = await authService.authenticate(UserId, password)
 
         return res.status(200).json({
             success : true,
@@ -247,12 +137,10 @@ export const login = async (req : Request, res : Response) => {
                 email : user.Email,
                 role : user.role,
             },
-            token,
+            token : tokenFor(user),
         })
     } catch (error : any) {
-        return res.status(500).json({
-            error : error.message
-        })
+        return sendError(res, error)
     }
 }
 
@@ -261,40 +149,20 @@ export const ForgotPassword = async (req : Request, res : Response) => {
     try {
         const parsed = forgotPasswordSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                errors: parsed.error.issues.map(issue => ({
-                field: issue.path.join("."),
-                message: issue.message,
-            })),
-        });
+            return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const data : ForgotPasswordInput = parsed.data;
-        const { email } = data
-
-        const user = await User.findOne({ Email : email });
-        if (!user) {
-            return res.status(404).json({
-                error : "User not found"
-            })
-        }
-        const code = generateActivationCode();
-        user.activationCode = code;
-        user.activationCodeExpires = new Date(Date.now() + 15 * 60 * 1000);
-        await user.save();
-
-        await sendResetCode(user.Email, user.FirstName, code)
+        const { user, phone, smsSent } = await authService.startPasswordRecovery(parsed.data.email)
 
         return res.status(200).json({
             success : true,
-            message : "Verification code sent to your email",
+            message : codeSentMessage("Verification code sent to your email", phone, smsSent),
             email : user.Email,
+            phone : smsSent && phone ? maskPhone(phone) : null,
             expiresAt : user.activationCodeExpires
         })
     } catch (error : any) {
-        return res.status(500).json({
-            error : error.message
-        })
+        return sendError(res, error)
     }
 }
 
@@ -302,30 +170,11 @@ export const verifyRecoveryCode = async (req: Request, res: Response) => {
   try {
     const parsed = verifyCodeSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({
-        errors: parsed.error.issues.map(issue => ({
-          field: issue.path.join("."),
-          message: issue.message,
-        })),
-      });
+      return res.status(400).json(validationErrors(parsed.error));
     }
 
-const { code, email, Email } = parsed.data;
-        const user = await User.findOne({
-          activationCode: code,
-          ...(email || Email ? { Email: email || Email } : {}),
-        });
-
-    if (!user) {
-      return res.status(404).json({ error: "Invalid code" });
-    }
-    if (!user.activationCodeExpires || user.activationCodeExpires < new Date()) {
-      return res.status(400).json({ error: "Code expired" });
-    }
-
-    user.activationCode = null;
-    user.activationCodeExpires = null;
-    await user.save();
+    const { code, email, Email } = parsed.data;
+    const user = await authService.verifyRecoveryCode(code, email || Email);
 
     return res.status(200).json({
       success: true,
@@ -333,9 +182,7 @@ const { code, email, Email } = parsed.data;
       user: { id: user._id, email: user.Email },
     });
   } catch (error: any) {
-    return res.status(500).json({ 
-        error: error.message 
-    });
+    return sendError(res, error);
   }
 };
 
@@ -344,40 +191,12 @@ export const resetPassword = async (req : AuthRequest, res : Response) => {
     try {
         const parsed = resetPasswordSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({
-                errors : parsed.error.issues.map(issue => ({
-                    field : issue.path.join("."),
-                    message : issue.message,
-                })),
-            });  
+            return res.status(400).json(validationErrors(parsed.error));
         }
 
-        const data : ResetPasswordInput = parsed.data;
-        const { password, email, Email, UserId } = data;
-        const normalizedEmail = (email || Email || "").trim().toLowerCase();
+        const { password, email, Email, UserId } = parsed.data;
+        const user = await authService.resetPassword({ id: req.user?.id, email: email || Email, UserId }, password)
 
-        let user = null;
-
-        if (req.user?.id) {
-            user = await User.findById(req.user.id);
-        } else if (normalizedEmail) {
-            user = await User.findOne({ Email: normalizedEmail });
-        } else if (UserId) {
-            user = await User.findOne({ UserId });
-        }
-
-        if (!user) {
-            return res.status(404).json({
-                error : "User not found"
-            })
-        }
-        user.Password = await bcrypt.hash(password, 12);
-        await user.save();
-        const payload : JWTPayLoad = {
-            id : user._id.toString(),
-            role : user.role
-        };
-        const token = generateToken(payload);
         return res.status(200).json({
             success: true,
             message: "Password reset successful",
@@ -388,11 +207,9 @@ export const resetPassword = async (req : AuthRequest, res : Response) => {
                 email: user.Email,
                 role: user.role,
             },
-            token,
+            token : tokenFor(user),
         });
     } catch (error : any) {
-        return res.status(500).json({
-            error : error.message
-        })
+        return sendError(res, error)
     }
 }

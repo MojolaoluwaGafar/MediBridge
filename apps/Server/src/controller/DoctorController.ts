@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
-import { Doctor } from "../Models/Doctor";
+import { listDoctors, getDoctor } from "../Services/doctorService";
+import { isServiceError } from "../Services/errors";
 
 export const getDoctors = async (req: Request, res: Response) => {
   try {
-    const doctors = await Doctor.find();
+    const doctors = await listDoctors();
     return res.status(200).json({
       success: true,
       doctors,
@@ -19,12 +20,12 @@ export const getDoctors = async (req: Request, res: Response) => {
 
 export const getDoctorById = async (req: Request, res: Response) => {
   try {
-    const doctor = await Doctor.findById(req.params.id);
-    if (!doctor) {
-      return res.status(404).json({ success: false, message: "Doctor not found" });
-    }
+    const doctor = await getDoctor(req.params.id as string);
     return res.status(200).json({ success: true, doctor });
   } catch (error: any) {
+    if (isServiceError(error)) {
+      return res.status(error.status).json({ success: false, message: error.message });
+    }
     return res.status(500).json({
       success: false,
       message: "Internal server error",

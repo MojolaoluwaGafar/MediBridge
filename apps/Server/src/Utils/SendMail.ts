@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { BrevoClient } from "@getbrevo/brevo";
+import { logger } from "./logger";
 
 dotenv.config();
 
@@ -56,15 +57,15 @@ export const SendEmail = async ({ to, subject, html }: EmailOptions) => {
         htmlContent: html,
       });
 
-      console.log("Email sent via Brevo");
+      logger.info("Email sent via Brevo");
       return { accepted: [to], rejected: [], response: "Email sent via Brevo" };
     } catch (error: any) {
-      console.error("Brevo email failed:", error.message);
+      logger.error({ err: error }, "Brevo email failed");
     }
   }
 
   if (process.env.NODE_ENV === "production") {
-    console.warn("Production email delivery skipped because no valid mail provider is configured.");
+    logger.warn("Production email delivery skipped because no valid mail provider is configured.");
     return {
       accepted: [to],
       rejected: [],
@@ -80,16 +81,13 @@ export const SendEmail = async ({ to, subject, html }: EmailOptions) => {
       subject,
       html,
     });
-    console.log(`Email sent : ${info.response}`);
+    logger.info({ response: info.response }, "Email sent");
     return info;
   } catch (error: any) {
-    console.error("Email failed to send:", error.message);
-    if (error?.code) {
-      console.error("SMTP code:", error.code);
-    }
-    if (error?.response) {
-      console.error("SMTP response:", error.response);
-    }
+    logger.error(
+      { err: error, smtpCode: error?.code, smtpResponse: error?.response },
+      "Email failed to send"
+    );
 
     throw new Error("Failed to send email.");
   }

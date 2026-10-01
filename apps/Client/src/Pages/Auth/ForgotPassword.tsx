@@ -24,7 +24,8 @@ export default function ForgotPassword() {
             reset()
             navigate("/verifyRecovery", { state : {
                 email : result.email,
-                expiresAt : result.expiresAt
+                expiresAt : result.expiresAt,
+                phone : result.phone
             }})
         } catch (err) {
             console.error("Code request error error:", err, error);
