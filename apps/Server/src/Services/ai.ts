@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logger } from "../Utils/logger";
 
 export interface AIMessage {
   role: "system" | "user" | "assistant";
@@ -42,7 +43,11 @@ export async function chatWithAI(
     }
     return content.trim();
   } catch (error: any) {
-    console.error("Groq error:", error.response?.data || error.message);
+    // Log the status and Groq's answer only: the axios error itself carries the API key.
+    logger.error(
+      { status: error.response?.status, details: error.response?.data, message: error.message },
+      "Groq request failed"
+    );
     throw new Error("AI integration failed");
   }
 }

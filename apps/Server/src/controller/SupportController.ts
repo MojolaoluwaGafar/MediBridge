@@ -116,7 +116,7 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       urgency: result?.level ?? "routine",
     });
   } catch (err) {
-    console.error(err);
+    req.log.error({ err }, "AI support chat failed");
     return res.status(500).json({
       message: "AI integration failed",
     });

@@ -1,15 +1,19 @@
-import mongoose from "mongoose";
-import { Request, Response } from "express";
+import { Response } from "express";
 import { BookingSchema } from "../Validation/BookingSchema";
-import { Appointment, IAppointment } from "../Models/Appointment";
 import type { AuthRequest } from "../middlewares/Auth";
-import { Activity } from "../Models/Activity";
-import { IDoctor } from "../types/doctor";
-import Flagged from "../Models/Flagged";
-import { triage, needsFlag, emergencyReply, type TriageLevel } from "../Services/triage";
-import { getDoctorForUser } from "../Utils/doctorAccount";
+import * as appointmentService from "../Services/appointmentService";
+import { isServiceError } from "../Services/errors";
 
-const URGENCY_LEVELS: TriageLevel[] = ["routine", "urgent", "emergency"];
+function sendError(res: Response, error: any) {
+  if (isServiceError(error)) {
+    return res.status(error.status).json({ success: false, message: error.message });
+  }
+  return res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    error: error.message,
+  });
+}
 
 export const bookAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -30,70 +34,16 @@ export const bookAppointment = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const { department, doctor, date, time, reason, shareRecords } = parsed.data;
-
-    // Booking triage: read the reason for the visit so urgent requests stand
-    // out to the doctor and emergencies are told to get help now.
-    const urgency = await triage(reason);
-
-    const appointment = await Appointment.create({
-      department,
-      doctor : new mongoose.Types.ObjectId(doctor),
-      date,
-      time,
-      reason,
-      shareRecords,
-      status: "confirmed",
-      userId: new mongoose.Types.ObjectId(req.user.id),
-      createdAt: new Date(),
-      urgency: {
-        level: urgency.level,
-        reason: urgency.reason,
-        source: urgency.source,
-        updatedAt: new Date(),
-      },
-    });
-
-    if (needsFlag(urgency)) {
-      await Flagged.create({
-        source: "booking",
-        userId: new mongoose.Types.ObjectId(req.user.id),
-        appointmentId: appointment._id,
-        message: reason,
-        reason: urgency.reason,
-        level: urgency.level,
-        category: urgency.category,
-        triageSource: urgency.source,
-      });
-    }
-
-    const populatedAppointment = await Appointment.findById(appointment._id).populate("doctor").lean<IAppointment>()
-
-    await Activity.create({
-      userId: req.user.id,
-      type: "confirmed",
-      message: `${populatedAppointment?.department} with ${(populatedAppointment?.doctor as IDoctor).docName} – ${date}`,
-    });
-
-    let safetyMessage: string | undefined;
-    if (urgency.level === "emergency") {
-      safetyMessage = emergencyReply(urgency.category);
-    } else if (urgency.level === "urgent") {
-      safetyMessage = "Your appointment is booked and marked as urgent for your doctor. If your symptoms get worse before then, contact the hospital or call emergency services.";
-    }
+    const { appointment, safetyMessage } = await appointmentService.bookAppointment(req.user.id, parsed.data);
 
     return res.status(201).json({
       success: true,
       message: "Appointment booked successfully",
-      appointment: populatedAppointment,
+      appointment,
       safetyMessage,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -103,20 +53,14 @@ export const getAppointments = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    const appointments = await Appointment.find({
-      userId: new mongoose.Types.ObjectId(req.user.id),
-    }).sort({ date: 1, time: 1 }).populate("doctor")
+    const appointments = await appointmentService.listAppointments(req.user.id);
 
     return res.status(200).json({
       success: true,
       appointments,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -132,41 +76,8 @@ export const rescheduleAppointment = async (
       });
     }
 
-    const id = req.params.id as string;
     const { date, time } = req.body;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid appointment ID",
-      });
-    }
-
-    const appointment = await Appointment.findById(id)
-      .where("userId")
-      .equals(req.user.id)
-      .populate("doctor");
-
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
-    }
-
-    appointment.date = date;
-    appointment.time = time;
-    appointment.status = "confirmed";
-
-    await appointment.save();
-
-    await Activity.create({
-      userId: req.user.id,
-      type: "rescheduled",
-      message: `${appointment.department} with ${
-        (appointment.doctor as IDoctor).docName
-      } – ${date}`,
-    });
+    const appointment = await appointmentService.rescheduleAppointment(req.user.id, req.params.id as string, date, time);
 
     return res.status(200).json({
       success: true,
@@ -174,11 +85,7 @@ export const rescheduleAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
@@ -194,41 +101,7 @@ export const cancelAppointment = async (
       });
     }
 
-    const id = req.params.id as string;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid appointment ID",
-      });
-    }
-
-    const appointment = await Appointment.findById(id).where("userId").equals(req.user.id).populate("doctor");
-
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
-    }
-
-    if (appointment.status.toLowerCase() === "cancelled") {
-      return res.status(400).json({
-        success: false,
-        message: "Appointment has already been cancelled",
-      });
-    }
-
-    appointment.status = "cancelled";
-    await appointment.save();
-
-    await Activity.create({
-      userId: req.user.id,
-      type: "cancelled",
-      message: `${appointment.department} with ${
-        (appointment.doctor as IDoctor).docName
-      } – ${appointment.date}`,
-    });
+    const appointment = await appointmentService.cancelAppointment(req.user.id, req.params.id as string);
 
     return res.status(200).json({
       success: true,
@@ -236,57 +109,16 @@ export const cancelAppointment = async (
       appointment,
     });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };
 
-// Doctors can correct the urgency the triage step set on their own appointments.
 export const setAppointmentUrgency = async (req: AuthRequest, res: Response) => {
   try {
-    const id = req.params.id as string;
     const { level, reason } = req.body ?? {};
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: "Invalid appointment ID" });
-    }
-    if (!URGENCY_LEVELS.includes(level)) {
-      return res.status(400).json({
-        success: false,
-        message: `Urgency must be one of: ${URGENCY_LEVELS.join(", ")}`,
-      });
-    }
-
-    const doctor = await getDoctorForUser(req.user!.id);
-    if (!doctor) {
-      return res.status(404).json({
-        success: false,
-        message: "Your account isn't linked to a doctor profile yet. Ask an admin to link it.",
-      });
-    }
-
-    const appointment = await Appointment.findOne({ _id: id, doctor: doctor._id });
-    if (!appointment) {
-      return res.status(404).json({ success: false, message: "Appointment not found" });
-    }
-
-    appointment.urgency = {
-      level,
-      reason: typeof reason === "string" && reason.trim() ? reason.trim().slice(0, 300) : "Set by doctor",
-      source: "doctor",
-      updatedAt: new Date(),
-    };
-    await appointment.save();
-
+    const appointment = await appointmentService.setAppointmentUrgency(req.user!.id, req.params.id as string, level, reason);
     return res.status(200).json({ success: true, appointment });
   } catch (error: any) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-      error: error.message,
-    });
+    return sendError(res, error);
   }
 };

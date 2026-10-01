@@ -1,9 +1,13 @@
 import { z } from "zod";
+import { normalizePhone } from "../Utils/phone";
 
 export const registerSchema = z.object({
   UserId: z.string().min(1, "UserId is required"),
   Email: z.string().email("Invalid email address"),
-  RegisteredNumber: z.string().min(1, "Registered number is required"),
+  RegisteredNumber: z
+    .string()
+    .min(1, "Registered phone number is required")
+    .refine((value) => normalizePhone(value) !== null, "Enter a valid phone number, e.g. 0803 123 4567 or +234 803 123 4567"),
   role: z.enum(["user", "doctor", "admin"]).default("user"),
 });
 
