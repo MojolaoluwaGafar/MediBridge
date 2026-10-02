@@ -15,7 +15,7 @@ type Props = {
   onRemove: () => Promise<void>;
 };
 
-export default function ProfilePhoto({ profile, busy, error, onUpload, onRemove }: Props) {
+export default function ProfilePhoto({ profile, busy, error, onUpload, onRemove, idLabel = "Patient ID" }: Props & { idLabel?: string }) {
   const fileInput = useRef<HTMLInputElement>(null);
   const fullName = `${profile.firstname} ${profile.lastname}`;
 
@@ -55,7 +55,7 @@ export default function ProfilePhoto({ profile, busy, error, onUpload, onRemove 
       <div className="space-y-2">
         <div>
           <p className="fontOutfit text-xl font-medium">{fullName}</p>
-          <p className="text-sm text-[#605E5E]">Patient ID {profile.userId}</p>
+          <p className="text-sm text-[#605E5E]">{idLabel} {profile.userId}</p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-2 sm:justify-start">

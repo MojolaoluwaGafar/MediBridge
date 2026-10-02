@@ -10,9 +10,10 @@ type Props = {
   contactId: string;
   onBack?: () => void;
   onChange: () => void;
+  side?: "patient" | "doctor";
 };
 
-export default function ChatPane({ contactId, onBack, onChange }: Props) {
+export default function ChatPane({ contactId, onBack, onChange, side = "patient" }: Props) {
   const { contact, messages, loading, error, sending, safetyNotice, send } = useConversation(contactId, onChange);
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -47,12 +48,14 @@ export default function ChatPane({ contactId, onBack, onChange }: Props) {
 
         {!loading && messages.length === 0 && contact && (
           <p className="mx-auto max-w-sm pt-10 text-center text-sm text-[#757575]">
-            No messages yet. Ask {contact.name} a question about your care, and they'll reply here.
+            {side === "patient"
+              ? `No messages yet. Ask ${contact.name} a question about your care, and they'll reply here.`
+              : `No messages yet. Send ${contact.name} a message and they'll see it in their portal.`}
           </p>
         )}
 
         {messages.map((message) => {
-          const isMine = message.sender === "patient";
+          const isMine = message.sender === side;
           const time = formatMessageTime(message.createdAt);
 
           return isMine ? (

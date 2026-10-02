@@ -13,6 +13,7 @@ import RecordRoutes from "./Routes/RecordRoutes"
 import MessageRoutes from "./Routes/MessageRoutes"
 import AccountRoutes from "./Routes/AccountRoutes"
 import AdminRoutes from "./Routes/AdminRoutes"
+import DoctorPortalRoutes from "./Routes/DoctorPortalRoutes"
 import { logger, httpLogger } from "./Utils/logger"
 import { apiLimiter, authLimiter, loginAccountLimiter, codeRequestAccountLimiter, aiLimiter } from "./middlewares/RateLimiter"
 dotenv.config()
@@ -99,6 +100,7 @@ app.use("/api", RecordRoutes)
 app.use("/api", MessageRoutes)
 app.use("/api", AccountRoutes)
 app.use("/api", AdminRoutes)
+app.use("/api", DoctorPortalRoutes)
 app.use("/api", DepartmentRoutes)
 
 const startServer = async () => {

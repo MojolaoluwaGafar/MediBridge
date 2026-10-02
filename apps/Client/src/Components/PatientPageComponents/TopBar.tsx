@@ -1,7 +1,5 @@
-import Logo from "../../assets/MediBridgeLogo.svg";
-import { Search, Menu } from "lucide-react";
-import { Link } from "react-router";
-import UserMenu from "./UserMenu";
+import { Search } from "lucide-react";
+import PortalTopBar from "../PortalComponents/PortalTopBar";
 import NotificationBell from "./NotificationBell";
 import type { AuthUser } from "../../Hooks/Auth/useAuth";
 
@@ -65,45 +63,17 @@ export default function Topbar({
   };
 
   return (
-    <header className="border-b border-[#E6EFF5] bg-white lg:sticky lg:top-0 lg:z-30">
-      <div className="container mx-auto flex items-center justify-between px-4 py-4 lg:h-20 lg:py-0 lg:px-6">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="lg:hidden rounded-md p-2 hover:bg-gray-100"
-            aria-label="Open menu"
-            aria-controls="patient-sidebar"
-            aria-expanded={isSidebarOpen}
-          >
-            <Menu size={26} />
-          </button>
-          <Link to="/">
-            <img
-              className="w-28 sm:w-36 lg:w-52"
-              src={Logo}
-              alt="MediBridge logo"
-            />
-          </Link>
-        </div>
-
-        <div className="hidden lg:flex flex-1 lg:ml-15 justify-start px-8">
-          {renderTitle()}
-        </div>
-
-        <div className="flex items-center gap-3 lg:gap-5">
-          <NotificationBell userId={user?.id} />
-          <UserMenu
-            user={user}
-            isOpen={isUserMenuOpen}
-            setIsOpen={setIsUserMenuOpen}
-            onLogout={onLogout}
-            onOpenSettings={onOpenSettings}
-          />
-        </div>
-      </div>
-
-      <div className="px-4 pb-4 lg:hidden">{renderTitle()}</div>
-    </header>
+    <PortalTopBar
+      title={renderTitle()}
+      bell={<NotificationBell userId={user?.id} />}
+      user={user}
+      sidebarId="patient-sidebar"
+      isSidebarOpen={isSidebarOpen}
+      setIsSidebarOpen={setIsSidebarOpen}
+      isUserMenuOpen={isUserMenuOpen}
+      setIsUserMenuOpen={setIsUserMenuOpen}
+      onLogout={onLogout}
+      onOpenSettings={onOpenSettings}
+    />
   );
 }

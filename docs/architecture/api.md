@@ -134,6 +134,36 @@ The login response now includes `user.img`.
 | GET    | `/api/flags`              | Admin, Doctor | List flags, newest first. Filters: `?status=new\|reviewed`, `?level=urgent\|emergency`. Doctors only see their own patients' flags |
 | PATCH  | `/api/flags/:id/review`   | Admin, Doctor | Mark a flag reviewed. Body: `{ note? }` |
 
+## Doctor portal — `/api/doctor`
+
+Doctor logins only (403 for anyone else). Each route also needs the login to
+be linked to a doctor profile; an unlinked login gets 404 with a message the
+portal shows. A doctor only ever sees their own appointments and the patients
+who booked them; anything else is 404.
+
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| GET    | `/api/doctor/me` | The doctor's profile, weekly hours and `slotMinutes` |
+| GET    | `/api/doctor/dashboard` | `stats`, today's `schedule`, `nextAppointmentId`, `needsAttention` (open safety flags) and `activity` |
+| GET    | `/api/doctor/appointments?view=` | `view`: `upcoming` (default), `today`, `completed`, `cancelled`, `all`. Optional `date=YYYY-MM-DD`. Each has its `patient` |
+| PATCH  | `/api/doctor/appointments/:id/complete` | Mark a confirmed visit completed, once its start time has passed |
+| PATCH  | `/api/doctor/appointments/:id/cancel` | Body: `{ reason? }`. The patient gets a message from the doctor (with the reason) and an activity entry, and the slot frees up |
+| GET    | `/api/doctor/patients` | Patients who booked with this doctor, with `visits`, `lastVisit`, `nextVisit` |
+| GET    | `/api/doctor/patients/:id` | Profile: contact details, appointments with this doctor, `recordsShared`, `records` (summaries, only when shared) and the doctor's `notes` |
+| GET    | `/api/doctor/patients/:id/records/:recordId` | One shared record with its sections |
+| GET    | `/api/doctor/patients/:id/records/:recordId/pdf` | Shared record as a PDF (`Cache-Control: no-store`) |
+| POST   | `/api/doctor/patients/:id/notes` | Body: `{ body, appointmentId? }`. A private note only this doctor sees |
+| PUT    | `/api/doctor/availability` | Body: `{ availability, availableTime: [{ day, start, end }] }`. Blocks on a day can't overlap and need at least one slot. Returns the profile and `outsideHours`: booked visits that no longer fit (they stay booked) |
+
+Records are shared when the patient ticked "share records" on a booking with
+this doctor that isn't cancelled. The doctor also uses `/api/conversations`
+(messages), `PATCH /api/appointment/:id/urgency` and `/api/flags`.
+
+To try the portal locally: `npm run seed:demo-doctor -w @medibridge/server -- --yes`
+creates a demo doctor (`DEMO-DOC-01`) with sample patients, visits, records,
+messages and flags, all on `@demo.medibridge.test` addresses. It refuses to run
+with `NODE_ENV=production`.
+
 ## Admin
 
 | Method | Path                               | Auth  | Purpose |
@@ -153,11 +183,10 @@ Role changes take effect the next time the person signs in.
 
 ## Not built yet
 
-- Doctor and admin portals. Sign-in already sends doctors to `/doctorDashboard`
-  and admins to `/adminDashboard` (placeholders), and link doctor logins with
-  the admin endpoints or `npm run link:doctor`.
-- A `completed` appointment status, and endpoints for doctors to write medical
-  records and visit notes.
+- The admin portal. Sign-in sends admins to `/adminDashboard` (a placeholder);
+  link doctor logins with the admin endpoints or `npm run link:doctor`.
+- Endpoints for doctors to write medical records (doctors can keep private
+  visit notes, but records still come from the hospital).
 - Real-time message delivery. The portal checks for new messages every 10
   seconds while a conversation is open.
 - Admin create, update and delete endpoints for doctors, patients and

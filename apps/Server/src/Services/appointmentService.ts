@@ -28,7 +28,7 @@ export const URGENCY_LEVELS: TriageLevel[] = ["routine", "urgent", "emergency"];
 export const RESCHEDULE_NOTICE_DAYS = Number(process.env.RESCHEDULE_NOTICE_DAYS ?? 7);
 
 // "Cardiology with Dr. Ada – 2026-10-01", as shown in the patient's activity feed.
-function describe(appointment: Pick<IAppointment, "department" | "doctor">, date: string) {
+export function describe(appointment: Pick<IAppointment, "department" | "doctor">, date: string) {
   return `${appointment.department} with ${(appointment.doctor as IDoctor).docName} – ${date}`;
 }
 
@@ -186,7 +186,7 @@ export async function bookAppointment(userId: string, booking: BookingPayload) {
 
   const populated = await Appointment.findById(appointment._id).populate("doctor").lean<IAppointment>();
   if (populated) {
-    await recordActivity(userId, "confirmed", describe(populated, date));
+    await recordActivity(userId, "confirmed", describe(populated, date), { doctor: doctor._id as mongoose.Types.ObjectId, appointment: appointment._id as mongoose.Types.ObjectId });
   }
 
   let safetyMessage: string | undefined;
@@ -208,7 +208,7 @@ export async function listAppointments(userId: string) {
   return appointments.sort(compareDateTime);
 }
 
-function assertStillOpen(appointment: IAppointment, action: "reschedule" | "cancel") {
+export function assertStillOpen(appointment: IAppointment, action: "reschedule" | "cancel") {
   if (appointment.status === "cancelled") {
     throw new ServiceError(400, action === "cancel" ? "Appointment has already been cancelled" : "A cancelled appointment can't be rescheduled. Please book a new one.");
   }
@@ -240,7 +240,7 @@ export async function rescheduleAppointment(userId: string, appointmentId: strin
     throw error;
   }
 
-  await recordActivity(userId, "rescheduled", describe(appointment, date));
+  await recordActivity(userId, "rescheduled", describe(appointment, date), { doctor: doctor._id as mongoose.Types.ObjectId, appointment: appointment._id as mongoose.Types.ObjectId });
   return appointment;
 }
 
@@ -251,7 +251,10 @@ export async function cancelAppointment(userId: string, appointmentId: string) {
   appointment.status = "cancelled";
   await appointment.save();
 
-  await recordActivity(userId, "cancelled", describe(appointment, appointment.date));
+  await recordActivity(userId, "cancelled", describe(appointment, appointment.date), {
+    doctor: (appointment.doctor as IDoctor)._id as unknown as mongoose.Types.ObjectId,
+    appointment: appointment._id as mongoose.Types.ObjectId,
+  });
   return appointment;
 }
 

@@ -16,6 +16,10 @@ type Props = {
   onLogout: () => void;
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  // Shared by the patient and doctor portals; the top bar's menu button
+  // points at this id.
+  id?: string;
+  ariaLabel?: string;
 };
 
 // Below the lg breakpoint the sidebar is a slide-in drawer opened from the top
@@ -27,6 +31,8 @@ export default function Sidebar({
   onLogout,
   isOpen,
   setIsOpen,
+  id = "patient-sidebar",
+  ariaLabel = "Patient portal",
 }: Props) {
   // While the drawer is open: Escape closes it and the page behind can't scroll.
   useEffect(() => {
@@ -57,8 +63,8 @@ export default function Sidebar({
       )}
 
       <aside
-        id="patient-sidebar"
-        aria-label="Patient portal"
+        id={id}
+        aria-label={ariaLabel}
         className={`
           fixed inset-y-0 left-0 z-50
           w-72 max-w-[85vw]

@@ -1,9 +1,8 @@
 import { Response } from "express";
 import mongoose from "mongoose";
 import Flagged from "../Models/Flagged";
-import { Appointment } from "../Models/Appointment";
 import type { AuthRequest } from "../middlewares/Auth";
-import { getDoctorForUser, getDoctorPatientIds } from "../Utils/doctorAccount";
+import { doctorFlagsFilter, getDoctorForUser } from "../Utils/doctorAccount";
 
 // Admins see every flag. Doctors see flags from their own patients and on
 // their own appointments. Anyone else gets null.
@@ -14,9 +13,7 @@ async function visibleFlagsFilter(req: AuthRequest): Promise<Record<string, unkn
     const doctor = await getDoctorForUser(req.user.id);
     if (!doctor) return null;
 
-    const patientIds = await getDoctorPatientIds(doctor._id as mongoose.Types.ObjectId);
-    const appointmentIds = await Appointment.distinct("_id", { doctor: doctor._id });
-    return { $or: [{ userId: { $in: patientIds } }, { appointmentId: { $in: appointmentIds } }] };
+    return doctorFlagsFilter(doctor._id as mongoose.Types.ObjectId);
   }
 
   return null;

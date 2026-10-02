@@ -20,6 +20,7 @@ import PrivacyPage from './Pages/PrivacyPage'
 import TermsPage from './Pages/TermsPage'
 import ContactPage from './Pages/ContactPage'
 import PortalComingSoon from './Pages/PortalComingSoon'
+import DoctorPage from './Pages/DoctorPage'
 
 import UnderConstruction from "./Components/UnderConstruction"
 
@@ -43,8 +44,8 @@ function App() {
       <Route path="/departments" element={<DepartmentPage />} />
       <Route path="/support" element={<SupportPage />} />
       <Route path='/patientDashboard' element={<ProtectRoute roles={["user"]}><PatientPage /></ProtectRoute>} />
-      {/* Placeholders until the doctor and admin portals are built. */}
-      <Route path='/doctorDashboard' element={<ProtectRoute roles={["doctor"]}><PortalComingSoon portal="Doctor" /></ProtectRoute>} />
+      <Route path='/doctorDashboard' element={<ProtectRoute roles={["doctor"]}><DoctorPage /></ProtectRoute>} />
+      {/* Placeholder until the admin portal is built. */}
       <Route path='/adminDashboard' element={<ProtectRoute roles={["admin"]}><PortalComingSoon portal="Admin" /></ProtectRoute>} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />

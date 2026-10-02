@@ -8,9 +8,11 @@ type Props = {
   conversations: IConversationSummary[];
   selectedId: string | null;
   onSelect: (contactId: string) => void;
+  // Which side the viewer is on, so their own messages read "You: ".
+  side?: "patient" | "doctor";
 };
 
-export default function ConversationList({ conversations, selectedId, onSelect }: Props) {
+export default function ConversationList({ conversations, selectedId, onSelect, side = "patient" }: Props) {
   const [search, setSearch] = useState("");
 
   const visible = useMemo(() => {
@@ -43,7 +45,7 @@ export default function ConversationList({ conversations, selectedId, onSelect }
         {visible.map(({ contact, lastMessage, unreadCount }) => {
           const isSelected = contact.id === selectedId;
           const preview = lastMessage
-            ? `${lastMessage.sender === "patient" ? "You: " : ""}${lastMessage.body}`
+            ? `${lastMessage.sender === side ? "You: " : ""}${lastMessage.body}`
             : `Start a conversation with ${contact.name}`;
 
           return (

@@ -18,7 +18,10 @@ export default function Tabs({
     setActiveTab
 }: Props) { 
   return (
-    <div className='grid grid-cols-3 gap-2 sm:gap-5 border p-2 sm:p-4 rounded-lg bg-[#FFFFFF] border-[#E7E4E4] mt-8 w-full max-w-173.5'>
+    <div
+      className='grid gap-2 sm:gap-5 border p-2 sm:p-4 rounded-lg bg-[#FFFFFF] border-[#E7E4E4] mt-8 w-full max-w-173.5'
+      style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+    >
         {tabs.map((tab) => (
         <button
           key={tab.key}

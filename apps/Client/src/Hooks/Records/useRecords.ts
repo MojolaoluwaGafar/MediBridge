@@ -18,15 +18,19 @@ export function useRecords() {
   };
 }
 
+type DownloadableRecord = Pick<IMedicalRecord, "_id" | "title">;
+const patientPdf = (record: DownloadableRecord) => recordService.downloadPdf(record._id);
+
 // Downloads a record's PDF. Tracks which record is downloading so only that
-// card's button shows progress.
-export function useDownloadRecord() {
+// card's button shows progress. The doctor portal passes its own fetcher for
+// records a patient has shared.
+export function useDownloadRecord(fetchPdf: (record: DownloadableRecord) => Promise<Blob> = patientPdf) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const download = useCallback(async (record: IMedicalRecord) => {
+  const download = useCallback(async (record: DownloadableRecord) => {
     setDownloadingId(record._id);
     try {
-      const blob = await recordService.downloadPdf(record._id);
+      const blob = await fetchPdf(record);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -41,7 +45,7 @@ export function useDownloadRecord() {
     } finally {
       setDownloadingId(null);
     }
-  }, []);
+  }, [fetchPdf]);
 
   return { download, downloadingId };
 }

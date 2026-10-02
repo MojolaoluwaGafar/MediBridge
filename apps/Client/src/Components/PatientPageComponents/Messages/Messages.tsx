@@ -7,16 +7,30 @@ import { useConversations } from "../../../Hooks/Messages/useConversations";
 import { useMediaQuery } from "../../../Hooks/Portal/useMediaQuery";
 
 type Props = {
-  // The doctor whose conversation is open (from ?doctor= in the URL).
+  // The person whose conversation is open (from the URL: ?doctor= for
+  // patients, ?patient= for doctors).
   contactId: string | null;
   onSelectContact: (contactId: string | null) => void;
+  side?: "patient" | "doctor";
+};
+
+const COPY = {
+  patient: {
+    description: "Conversations with your doctors and care team",
+    emptyDescription: "Once you've booked an appointment, you can message your doctor here.",
+  },
+  doctor: {
+    description: "Conversations with your patients",
+    emptyDescription: "When a patient books with you, you can message them here.",
+  },
 };
 
 // Fills the screen under the top bar and page header so the message list
 // scrolls inside the card rather than the whole page.
 const CARD_HEIGHT = "h-[calc(100dvh-16.5rem)] min-h-[24rem]";
 
-export default function Messages({ contactId, onSelectContact }: Props) {
+export default function Messages({ contactId, onSelectContact, side = "patient" }: Props) {
+  const copy = COPY[side];
   const { conversations, loading, error, refresh } = useConversations();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
@@ -46,7 +60,7 @@ export default function Messages({ contactId, onSelectContact }: Props) {
           className="rounded-xl border border-[#E6E3E3] bg-white"
           icon={<MessageCircleMore size={28} />}
           title="No conversations yet"
-          description="Once you've booked an appointment, you can message your doctor here."
+          description={copy.emptyDescription}
         />
       );
     }
@@ -58,6 +72,7 @@ export default function Messages({ contactId, onSelectContact }: Props) {
             conversations={conversations}
             selectedId={openId}
             onSelect={onSelectContact}
+            side={side}
           />
         </div>
 
@@ -68,6 +83,7 @@ export default function Messages({ contactId, onSelectContact }: Props) {
               contactId={openId}
               onBack={isDesktop ? undefined : () => onSelectContact(null)}
               onChange={refresh}
+              side={side}
             />
           </div>
         ) : (
@@ -83,7 +99,7 @@ export default function Messages({ contactId, onSelectContact }: Props) {
     <div className="w-full">
       <PageHeader
         title="Messages"
-        description="Conversations with your doctors and care team"
+        description={copy.description}
       />
       <div className="mt-6">{renderBody()}</div>
     </div>

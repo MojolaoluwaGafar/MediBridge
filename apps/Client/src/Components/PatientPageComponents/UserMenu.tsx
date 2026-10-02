@@ -10,6 +10,8 @@ type Props = {
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   onLogout: () => void;
   onOpenSettings?: () => void;
+  // The line under the name; the email unless the portal shows something else.
+  subtitle?: string;
 };
 
 export default function UserMenu({
@@ -18,7 +20,9 @@ export default function UserMenu({
   setIsOpen,
   onLogout,
   onOpenSettings,
+  subtitle,
 }: Props) {
+  const secondLine = subtitle ?? user?.email;
   return (
     <div className="relative flex items-center gap-2 sm:gap-3">
       <img
@@ -34,7 +38,7 @@ export default function UserMenu({
           </p>
 
           <p className="text-[#666666] text-xs truncate max-w-[160px]">
-            {user?.email}
+            {secondLine}
           </p>
         </div>
 
@@ -68,7 +72,7 @@ export default function UserMenu({
             </p>
 
             <p className="text-xs text-[#666666] break-all">
-              {user?.email}
+              {secondLine}
             </p>
           </div>
 

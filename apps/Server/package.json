@@ -14,7 +14,8 @@
     "seed:patient": "ts-node src/Tests/seedPatient.ts",
     "migrate:phones": "ts-node src/scripts/normalizePhones.ts",
     "seed:records": "ts-node src/seeds/seedRecords.ts",
-    "link:doctor": "ts-node src/scripts/linkDoctor.ts"
+    "link:doctor": "ts-node src/scripts/linkDoctor.ts",
+    "seed:demo-doctor": "ts-node src/seeds/seedDemoDoctor.ts"
   },
   "keywords": [],
   "author": "",

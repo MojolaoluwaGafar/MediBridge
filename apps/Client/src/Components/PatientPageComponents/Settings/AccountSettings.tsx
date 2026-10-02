@@ -16,7 +16,16 @@ function Section({ title, description, children }: { title: string; description:
   );
 }
 
-export default function AccountSettings() {
+type Props = {
+  // The doctor portal shows a staff ID and its own wording.
+  idLabel?: string;
+  photoHint?: string;
+};
+
+export default function AccountSettings({
+  idLabel = "Patient ID",
+  photoHint = "Your photo helps your care team recognise you.",
+}: Props) {
   const { profile, loading, error, uploadPhoto, removePhoto, photoBusy, photoError } = useAccount();
 
   if (loading) {
@@ -36,7 +45,7 @@ export default function AccountSettings() {
   const details: [string, string][] = [
     ["First name", profile.firstname],
     ["Last name", profile.lastname],
-    ["Patient ID", profile.userId],
+    [idLabel, profile.userId],
     ["Email address", profile.email],
     ["Phone number", profile.phone],
   ];
@@ -45,13 +54,14 @@ export default function AccountSettings() {
     <div className="w-full space-y-6">
       <PageHeader title="Account Settings" description="Manage your profile and keep your account secure." />
 
-      <Section title="Profile" description="Your photo helps your care team recognise you.">
+      <Section title="Profile" description={photoHint}>
         <ProfilePhoto
           profile={profile}
           busy={photoBusy}
           error={photoError}
           onUpload={uploadPhoto}
           onRemove={removePhoto}
+          idLabel={idLabel}
         />
       </Section>
 

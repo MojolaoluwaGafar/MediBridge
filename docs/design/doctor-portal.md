@@ -206,7 +206,25 @@ are listed under it with a date and time.
 | `Doctor / Decline request` (modal)      | Optional reason field + `Decline` / `Keep request` buttons |
 | Mobile 375 of both main screens         | Sidebar collapses to the menu button, as on the patient side |
 
-## What the API needs for these screens
+## Built (October 2026)
+
+The portal is live at `/doctorDashboard` with Dashboard, Appointments,
+Patients (list and profile), Availability, Messages and Account Settings; the
+endpoints are in [`docs/architecture/api.md`](../architecture/api.md#doctor-portal--apidoctor).
+Differences from this spec:
+
+- **No Pending requests.** Bookings are confirmed straight away, so the
+  dashboard's right column is **Needs attention**: messages and bookings the
+  safety triage flagged, each with *Open patient* and *Mark reviewed*. The
+  second stat tile counts them.
+- **No "Start visit".** A visit can be marked completed once its start time
+  has passed; doctors can also cancel with a reason that is messaged to the
+  patient.
+- **Records locked** tells the doctor the patient chooses sharing when booking;
+  there is no "Request access" flow yet.
+- **Sex and age** are still not stored, so the profile shows ID, phone and email.
+
+## What the API needed for these screens (original notes)
 
 These screens depend on backend work that doesn't exist yet. It's listed here
 so design and API stay in step. The API itself is documented in
