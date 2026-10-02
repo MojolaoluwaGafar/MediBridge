@@ -22,7 +22,7 @@ const Card = ({ icon, comment, avatar, name, role }: Card) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -50 }}
       transition={{ duration: 0.5 }}
-      className="border border-[#DDDDDD] bg-[#EEEDED] w-full sm:w-96 p-4 md:p-5 flex flex-col justify-center rounded-md gap-4"
+      className="border border-[#DDDDDD] bg-[#EEEDED] w-full min-w-0 p-4 md:p-5 flex flex-col justify-center rounded-md gap-4"
     >
       <div>{icon}</div>
       <h1 className="text-[#403F3F] text-sm md:text-base">{comment}</h1>

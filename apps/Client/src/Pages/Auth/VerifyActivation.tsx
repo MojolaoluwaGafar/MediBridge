@@ -175,25 +175,25 @@ export default function VerifyActivation() {
 
   return (
     <RegisterLayout heading='Securing your healthcare journey.' subHeading='We use multi-factor authentication to ensure your  medical records and personal data remain private and protected at every step.' image={Frame}>
-    <form onSubmit={handleSubmit(submit)} className='border border-[#D1D5D5] rounded-xl my-4 lg:my-0 w-full p-8 fontOutfit'>
-        <div className='flex flex-col lg:flex-row gap-2 items-center justify-between'>
+    <form onSubmit={handleSubmit(submit)} className='border border-[#D1D5D5] rounded-xl my-4 lg:my-0 w-full p-5 sm:p-8 fontOutfit'>
+        <div className='flex flex-col sm:flex-row gap-2 items-center justify-between'>
             <p className='flex items-center gap-2 text-[#28574E]'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#28574E] text-white'>1</span> Identity</p>
-            <span className='bg-[#28574E] w-full lg:w-[45.5px] h-0.5'></span>
+            <span className='bg-[#28574E] w-full sm:w-auto sm:flex-1 sm:mx-2 lg:flex-none lg:w-[45.5px] lg:mx-0 h-0.5'></span>
             <p className='flex items-center gap-2 text-[#28574E]'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#28574E] text-white'>2</span> OTP</p>
-            <span className='bg-[#E1E3E3] w-full lg:w-[45.5px] h-0.5'></span>
+            <span className='bg-[#E1E3E3] w-full sm:w-auto sm:flex-1 sm:mx-2 lg:flex-none lg:w-[45.5px] lg:mx-0 h-0.5'></span>
             <p className='flex items-center gap-2'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#E1E3E3] text-[#3E3B3B]'>3</span> Set Up</p>
         </div>
         <h1 className="text-[28px] font-semibold pt-5">Verify your account</h1>
         <p className="pb-5 text-[#757575] text-[18px]">We’ve sent a 6-digit verification code to your email{phone ? ` and by SMS to ${phone}` : ""} to verify your account.</p>
 
-        <div className="flex gap-5 py-7">
+        <div className="grid grid-cols-[repeat(6,minmax(0,2.75rem))] gap-2 sm:gap-5 py-7">
             {otp.map((digit,index)=>{
             return <Input key={index} ref={(el)=>{
                 inputRefs.current[index] = el;
             }}
             value={digit} onKeyDown={(e) => handleKeyDown(index, e)} onPaste={handlePaste}
             onChange={(e) => handleOtpChange(index, e.target.value)} type='text' inputMode="numeric" pattern="\d"
-            maxLength={1} className="flex items-center justify-center text-center border-[1.5px] border-[#D9D9D9] w-11 h-11 text-[18px] font-semibold" />
+            maxLength={1} className="flex items-center justify-center text-center border-[1.5px] border-[#D9D9D9] min-w-0 h-11 px-0 text-[18px] font-semibold" />
             })}
         </div>
         {errors.code && <p className='text-red-500 text-center'>{errors.code.message}</p>}

@@ -27,11 +27,11 @@ export default function Explore() {
 
   const Card = ({ icon, department, style }: Idep) => {
     return (
-      <div className="bg-white rounded-lg flex flex-col items-center justify-center w-full sm:w-62.5 h-[120px] md:h-[148.5px] gap-2 shadow-sm">
+      <div className="bg-white rounded-lg flex flex-col items-center justify-center w-full min-w-0 px-2 h-[120px] md:h-[148.5px] gap-2 shadow-sm">
         <span className={`${style} w-12 h-12 md:w-15 md:h-15 rounded-full flex items-center justify-center`}>
           {icon}
         </span>
-        <p className="text-sm md:text-[20px] font-semibold text-center">{department}</p>
+        <p className="text-sm md:text-base lg:text-[20px] font-semibold text-center">{department}</p>
       </div>
     )
   }
@@ -46,7 +46,7 @@ export default function Explore() {
           10+ departments. One unified record.
         </h1>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 mt-8 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-8 w-full">
           {departments.map((department) => (
             <Card key={department.id} {...department} />
           ))}
@@ -55,7 +55,7 @@ export default function Explore() {
         <Link to="/departments">
           <Button
             variant="primaryWBorder"
-            width="w-[281px] mt-5"
+            width="w-full max-w-[281px] sm:w-[281px] mt-5"
             type="button"
             content="Explore all Departments"
           />

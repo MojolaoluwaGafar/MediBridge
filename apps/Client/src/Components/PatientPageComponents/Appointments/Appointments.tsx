@@ -112,7 +112,7 @@ export default function Appointments() {
 
         </div>
 
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-6">
           <Tabs
             tabs={tabs}
             activeTab={activeTab}

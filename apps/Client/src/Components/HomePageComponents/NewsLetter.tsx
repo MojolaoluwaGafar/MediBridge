@@ -9,7 +9,7 @@ export default function NewsLetter() {
           Stay informed on your health
         </h1>
         
-        <p className="text-[#DAD8D8] text-sm md:text-[18px] text-center w-full md:w-175">
+        <p className="text-[#DAD8D8] text-sm md:text-[18px] text-center w-full max-w-175">
           Get the latest health tips, medical news, and app updates delivered to your inbox once a week.
         </p>
 

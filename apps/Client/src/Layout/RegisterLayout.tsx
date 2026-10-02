@@ -28,7 +28,9 @@ export default function RegisterLayout({ heading, subHeading, children, ul, imag
           </div>
         </div>
 
-        <div className="w-full lg:w-1/2 px-6 md:px-10 flex items-center justify-center">
+        <div className="w-full lg:w-1/2 px-4 sm:px-6 md:px-10 py-6 lg:py-0 flex flex-col items-center justify-center">
+          {/* The branded side panel is hidden below lg, so show the logo here instead. */}
+          <img className="lg:hidden w-36 h-auto mb-2" src={Logo} alt="MediBridge Logo" />
           <div className="container mx-auto flex items-center justify-center fontOutfit w-full max-w-md lg:max-w-lg">
             {children}
           </div>

@@ -62,12 +62,12 @@ export default function SetPassword() {
     
     return (
     <RegisterLayout heading='Secure Your Access' subHeading='Your health data is protected with industry-leading encryption. Step 3 of 3: finalise your security credentials.' image={Image}>
-        <form onSubmit={handleSubmit(submit)} className='border border-[#D1D5D5] rounded-xl w-full my-4 lg:my-0 p-8'>
-            <div className='flex flex-col lg:flex-row gap-2 items-center justify-between'>
+        <form onSubmit={handleSubmit(submit)} className='border border-[#D1D5D5] rounded-xl w-full my-4 lg:my-0 p-5 sm:p-8'>
+            <div className='flex flex-col sm:flex-row gap-2 items-center justify-between'>
             <p className='flex items-center gap-2 text-[#28574E]'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#28574E] text-white'>1</span> Identity</p>
-            <span className='bg-[#28574E] w-full lg:w-[45.5px] h-0.5'></span>
+            <span className='bg-[#28574E] w-full sm:w-auto sm:flex-1 sm:mx-2 lg:flex-none lg:w-[45.5px] lg:mx-0 h-0.5'></span>
             <p className='flex items-center gap-2 text-[#28574E]'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#28574E] text-white'>2</span> OTP</p>
-            <span className='bg-[#E1E3E3] w-full lg:w-[45.5px] h-0.5'></span>
+            <span className='bg-[#E1E3E3] w-full sm:w-auto sm:flex-1 sm:mx-2 lg:flex-none lg:w-[45.5px] lg:mx-0 h-0.5'></span>
             <p className='flex items-center gap-2 text-[#28574E]'><span className='h-8 w-8 rounded-full flex items-center justify-center bg-[#28574E] text-white'>3</span> Set Up</p>
             </div>
         <h1 className="text-[28px] font-semibold pt-5">Set Up Password</h1>

@@ -28,8 +28,8 @@ export default function MessageContainer() {
   const userHasSentMessage = messages.some((msg) => msg.sender === "user");
 
   return (
-    <div className="flex flex-col h-144.75 w-full bg-white border border-[#D1D5D5] rounded-xl shadow-md">
-      <div className="flex-1 overflow-y-auto scrollbar-none p-12 space-y-5">
+    <div className="flex flex-col h-[min(36rem,85dvh)] md:h-144.75 w-full bg-white border border-[#D1D5D5] rounded-xl shadow-md">
+      <div className="flex-1 overflow-y-auto scrollbar-none p-4 sm:p-8 md:p-12 space-y-5">
         {messages.map((msg) => (
           <AiChatBubble
             key={msg.id}
@@ -42,9 +42,9 @@ export default function MessageContainer() {
         <div ref={messagesRef} />
       </div>
 
-      <div className="border-t border-[#C2C6D4] p-6">
+      <div className="border-t border-[#C2C6D4] p-4 sm:p-6">
         {!userHasSentMessage && (
-          <div className="flex gap-4 pb-5 flex-wrap">
+          <div className="flex gap-2 sm:gap-4 pb-4 sm:pb-5 flex-wrap">
             {[
               "I don't feel well",
               "Medication information",
@@ -88,8 +88,8 @@ export default function MessageContainer() {
           </button>
         </div>
 
-        <p className="flex items-center gap-2 pt-5 text-[14px] text-[#757575]">
-          <CircleAlert size={18} />
+        <p className="flex items-start gap-2 pt-4 sm:pt-5 text-[13px] sm:text-[14px] text-[#757575]">
+          <CircleAlert size={18} className="shrink-0 mt-0.5" />
           This AI provides informational guidance and does not replace professional medical diagnosis.
         </p>
       </div>

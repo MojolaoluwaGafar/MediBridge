@@ -171,14 +171,15 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
               )}
             </div>
 
-            <div className="px-6 pt-15 pb-5 flex gap-5.75">
+            {/* Pinned so Back/Next stay reachable while a long step scrolls on phones. */}
+            <div className="sticky bottom-0 bg-white px-6 pt-6 sm:pt-15 pb-5 flex gap-3 sm:gap-5.75">
               {step > 1 && (
                 <Button
                   type="button"
                   variant="outline"
                   onClick={prevStep}
                   content="Back"
-                  className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md"
+                  className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-md max-sm:text-[15px]"
                 />
               )}
               <Button
@@ -192,7 +193,7 @@ export default function BookAppointmentModal({ onClose, onBooked }: Props) {
                     : "Next"
                 }
                 disabled={isDisabled || loading}
-                className={`px-6 py-2 rounded-md ${
+                className={`px-4 sm:px-6 py-2 rounded-md max-sm:text-[15px] ${
                   isDisabled || loading
                     ? "bg-[#D9D9D9] text-white cursor-not-allowed"
                     : "bg-[#28574E] text-white hover:bg-[#1f4038]"

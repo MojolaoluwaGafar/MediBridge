@@ -67,7 +67,7 @@ export default function Dashboard() {
     const upcomingAppointment = upcomingAppointments[0] ?? null;
 
     return (
-    <div className="w-full px-4 md:px-0">
+    <div className="w-full">
       {cancelDialog}
 
       {selectedAppointment && (

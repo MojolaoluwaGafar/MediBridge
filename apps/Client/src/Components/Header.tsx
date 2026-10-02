@@ -25,12 +25,12 @@ export default function Header({ className, heading, subHeading, others, image }
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
   return (
-    <div className={`${className} relative px-5 md:px-20 py-5 w-full`}>
+    <div className={`${className} relative px-4 sm:px-5 md:px-10 lg:px-20 py-5 w-full`}>
       <div className="mx-auto container">
-        <nav className="bg-white rounded-full flex justify-between items-center px-5 md:px-10 h-20">
-          <Link to="/"><img src={Logo} alt="MediBridge Logo" /></Link>
+        <nav className="bg-white rounded-full flex justify-between items-center gap-4 px-5 md:px-10 h-16 md:h-20">
+          <Link to="/" className="shrink-0"><img src={Logo} alt="MediBridge Logo" /></Link>
 
-          <div className="hidden md:flex gap-5 items-center fontOutfit">
+          <div className="hidden lg:flex gap-5 items-center fontOutfit">
             {navLinks.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -44,7 +44,7 @@ export default function Header({ className, heading, subHeading, others, image }
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden lg:flex items-center gap-2">
             {isAuthenticated ? (
               <Link to="/patientDashboard">
                 <Button className="px-4 fontOutfit" type="button" content="Go to dashboard" />
@@ -67,41 +67,43 @@ export default function Header({ className, heading, subHeading, others, image }
           </div>
 
           <button
-            className="md:hidden text-2xl text-[#28574E]"
+            className="lg:hidden text-2xl text-[#28574E]"
+            aria-label="Open menu"
             onClick={() => setMenuOpen(true)}
           >
             <Menu />
           </button>
         </nav>
 
-        <div className="flex flex-col items-center justify-center py-10 md:py-25 w-full md:w-195 mx-auto text-center gap-3">
-          <h1 className="text-[36px] md:text-[58px] text-white font-extrabold fontLibre leading-[100%]">
+        <div className="flex flex-col items-center justify-center py-10 md:py-25 w-full max-w-195 mx-auto text-center gap-3">
+          <h1 className="text-[32px] sm:text-[44px] md:text-[58px] text-white font-extrabold fontLibre leading-[100%]">
             {heading}
           </h1>
-          <p className="text-[16px] md:text-[20px] text-[#DAD8D8] font-light w-full md:w-160 text-center fontOutfit">
+          <p className="text-[16px] md:text-[20px] text-[#DAD8D8] font-light w-full max-w-160 text-center fontOutfit">
             {subHeading}
           </p>
-          <div className="flex gap-5 pt-5 z-10">{others}</div>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-5 pt-5 z-10">{others}</div>
         </div>
       </div>
 
       <img
-        className="w-full hidden lg:flex md:w-225.5 absolute top-40 md:top-107 left-1/2 transform -translate-x-1/2"
+        className="hidden lg:flex lg:w-225.5 absolute lg:top-107 left-1/2 transform -translate-x-1/2"
         src={image}
         alt=""
       />
 
       {menuOpen && (
         <div
-          className="fixed inset-0 bg-transparent z-50 flex justify-end"
+          className="fixed inset-0 bg-black/30 z-50 flex justify-end lg:hidden"
           onClick={() => setMenuOpen(false)}
         >
           <div
-            className="bg-white w-64 h-full shadow-lg p-6 flex flex-col gap-6 transform transition-transform duration-300 translate-x-0"
+            className="bg-white w-64 max-w-[85vw] h-full shadow-lg p-6 flex flex-col gap-6 transform transition-transform duration-300 translate-x-0"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               className="self-end text-2xl text-[#28574E]"
+              aria-label="Close menu"
               onClick={() => setMenuOpen(false)}
             >
               <X />

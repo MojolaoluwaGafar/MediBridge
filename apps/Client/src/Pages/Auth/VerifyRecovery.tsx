@@ -181,14 +181,14 @@ export default function VerifyRecovery() {
             <label htmlFor="otp" className="text-[18px] font-semibold py-3">OTP Verification</label>
             <p>Enter the 6-digit code sent to {email}{phone ? ` and by SMS to ${phone}` : ""}</p>
 
-            <div className="flex gap-5 py-7">
+            <div className="grid grid-cols-[repeat(6,minmax(0,2.75rem))] gap-2 sm:gap-5 py-7">
                 {otp.map((digit,index)=>{
             return <Input key={index} ref={(el)=>{
                 inputRefs.current[index] = el;
             }}
             value={digit} onKeyDown={(e) => handleKeyDown(index, e)} onPaste={handlePaste}
             onChange={(e) => handleOtpChange(index, e.target.value)} type='text' inputMode="numeric" pattern="\d"
-            maxLength={1} className="flex items-center justify-center text-center border-[1.5px] border-[#D9D9D9] w-11 h-11 text-[18px] font-semibold" />
+            maxLength={1} className="flex items-center justify-center text-center border-[1.5px] border-[#D9D9D9] min-w-0 h-11 px-0 text-[18px] font-semibold" />
             })}
             </div>
 

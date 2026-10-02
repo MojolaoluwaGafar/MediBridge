@@ -31,10 +31,10 @@ function Card({ appointment, onView, onReschedule, onCancel, onBookAgain }: Appo
             {status.label}
         </span>
 
-        <div className="flex flex-col sm:flex-row gap-3 pr-28">
+        <div className="flex flex-col sm:flex-row gap-3 sm:pr-28">
             <Avatar name={doctor.docName} image={doctor.docImg} size="xl" />
-            <div className="flex flex-col gap-1">
-                <h2 className="text-[#141313] fontOutfit font-medium text-[20px]">{doctor.docName}</h2>
+            <div className="flex flex-col gap-1 min-w-0">
+                <h2 className="text-[#141313] fontOutfit font-medium text-lg sm:text-[20px] break-words">{doctor.docName}</h2>
                 <p className="text-[#605E5E] fontOutfit font-light text-[16px]">
                     {doctor.department} Department
                 </p>
@@ -49,12 +49,12 @@ function Card({ appointment, onView, onReschedule, onCancel, onBookAgain }: Appo
             </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row w-full lg:items-center gap-3 lg:gap-5">
-            <Button type="button" size="sm" width="w-full lg:w-[164px]" content="View Details" onClick={() => onView(appointment)} />
+        <div className="flex flex-col sm:flex-row sm:flex-wrap w-full sm:items-center gap-3 sm:gap-x-5">
+            <Button type="button" size="sm" width="w-full sm:w-[164px]" content="View Details" onClick={() => onView(appointment)} />
 
             {upcoming && (
                 <>
-                    <Button type="button" size="sm" width="w-full lg:w-[164px]" content="Reschedule" variant="outline"
+                    <Button type="button" size="sm" width="w-full sm:w-[164px]" content="Reschedule" variant="outline"
                         onClick={() => onReschedule(appointment)} />
                     {doctor._id && (
                         <button className="text-[#3E3B3B] fontOutfit font-normal hover:underline" type="button"
@@ -70,17 +70,17 @@ function Card({ appointment, onView, onReschedule, onCancel, onBookAgain }: Appo
 
             {completed && (
                 <>
-                    <Button type="button" size="sm" width="w-full lg:w-[164px]" variant="outline" content="Visit records"
+                    <Button type="button" size="sm" width="w-full sm:w-[164px]" variant="outline" content="Visit records"
                         onClick={() => goToTab("medRecords")} />
                     {onBookAgain && (
-                        <Button type="button" size="sm" width="w-full lg:w-[164px]" variant="outline" content="Book Follow Up"
+                        <Button type="button" size="sm" width="w-full sm:w-[164px]" variant="outline" content="Book Follow Up"
                             onClick={onBookAgain} />
                     )}
                 </>
             )}
 
             {appointment.status === "cancelled" && onBookAgain && (
-                <Button type="button" size="sm" width="w-full lg:w-[164px]" variant="outline" content="Book again"
+                <Button type="button" size="sm" width="w-full sm:w-[164px]" variant="outline" content="Book again"
                     onClick={onBookAgain} />
             )}
         </div>

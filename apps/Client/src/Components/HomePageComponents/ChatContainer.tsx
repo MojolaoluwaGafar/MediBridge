@@ -41,8 +41,8 @@ export default function ChatContainer({ preview = false } : Props) {
   return (
    <>
     {showModal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-xl text-center relative">
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white p-6 rounded-xl text-center relative max-w-sm w-full">
             <button
         onClick={() => setShowModal(false)}
         className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
@@ -62,7 +62,7 @@ export default function ChatContainer({ preview = false } : Props) {
     </div>
   </div>
 )}
-    <div className="flex h-124.5 flex-col rounded-4xl border border-[#D1D5D5] bg-white p-12 shadow-md">
+    <div className="flex h-110 md:h-124.5 flex-col rounded-3xl md:rounded-4xl border border-[#D1D5D5] bg-white p-4 sm:p-8 md:p-12 shadow-md">
       <div className="flex-1 overflow-y-auto space-y-4">
         {messages.map((msg) => (
                   <AiChatBubble
@@ -108,6 +108,7 @@ export default function ChatContainer({ preview = false } : Props) {
           onClick={() => void handleSend()}
           disabled={loading || !input.trim()}
           className="absolute right-4 top-1/2 -translate-y-1/2 disabled:opacity-50"
+          aria-label="Send"
         >
           <SendHorizontal />
         </button>

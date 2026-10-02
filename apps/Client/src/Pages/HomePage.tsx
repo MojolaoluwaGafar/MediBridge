@@ -31,13 +31,13 @@ export default function HomePage() {
 
   return (
     <AppLayout headerProps={{
-      className : "bg-[#28574E] h-[90vh] lg:h-[720px] relative",
+      className : "bg-[#28574E] min-h-[70vh] lg:h-[720px] relative",
       heading : "Healthcare That Connects You",
       subHeading : "Book appointments, talk with trusted doctors, receive support, and get instant AI health guidance in one calm experience.",
       image : Image,
-      others : <div className='flex flex-col lg:flex lg:flex-row items-center gap-5 fontOutfit'>
-      <Button onClick={handleBookAppointment} type="button" content="Book Appointment" variant="secondary" width="w-[236px]" />
-      <Button onClick={handleAISupport} type="button" content="Chat With AI Support"  variant="primaryWBorder"  width="w-[236px]"
+      others : <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-5 fontOutfit'>
+      <Button onClick={handleBookAppointment} type="button" content="Book Appointment" variant="secondary" width="w-full max-w-[236px] sm:w-[236px]" />
+      <Button onClick={handleAISupport} type="button" content="Chat With AI Support"  variant="primaryWBorder"  width="w-full max-w-[236px] sm:w-[236px]"
       className='bandGreen' />
       </div>
     }}>

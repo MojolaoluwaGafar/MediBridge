@@ -49,17 +49,17 @@ export default function Activate() {
     >
         <form
   onSubmit={handleSubmit(submit)}
-  className="border border-[#D1D5D5] rounded-xl w-full max-w-lg lg:max-w-2xl mx-auto p-6 md:p-8 my-4 lg:my-0"
+  className="border border-[#D1D5D5] rounded-xl w-full max-w-lg lg:max-w-2xl mx-auto p-5 sm:p-6 md:p-8 my-4 lg:my-0"
 >
-  <div className="flex flex-col lg:flex-row gap-2 items-center justify-between">
+  <div className="flex flex-col sm:flex-row gap-2 items-center justify-between">
     <p className="flex items-center gap-2">
       <span className="h-8 w-8 rounded-full flex items-center justify-center bg-[#28574E] text-white">1</span> Identity
     </p>
-    <span className="bg-[#E1E3E3] w-full lg:w-[45.5px] h-0.5"></span>
+    <span className="bg-[#E1E3E3] w-full sm:w-auto sm:flex-1 sm:mx-2 lg:flex-none lg:w-[45.5px] lg:mx-0 h-0.5"></span>
     <p className="flex items-center gap-2">
       <span className="h-8 w-8 rounded-full flex items-center justify-center bg-[#E1E3E3] text-[#3E3B3B]">2</span> OTP
     </p>
-    <span className="bg-[#E1E3E3] w-full lg:w-[45.5px] h-0.5"></span>
+    <span className="bg-[#E1E3E3] w-full sm:w-auto sm:flex-1 sm:mx-2 lg:flex-none lg:w-[45.5px] lg:mx-0 h-0.5"></span>
     <p className="flex items-center gap-2">
       <span className="h-8 w-8 rounded-full flex items-center justify-center bg-[#E1E3E3] text-[#3E3B3B]">3</span> Set Up
     </p>

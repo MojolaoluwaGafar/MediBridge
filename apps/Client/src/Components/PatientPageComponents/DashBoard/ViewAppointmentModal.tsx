@@ -24,7 +24,7 @@ export default function ViewAppointmentModal({
       aria-label="Close modal"
     >
       <div
-        className="w-131.75 max-w-full max-h-[90vh] overflow-y-auto scrollbar-none relative rounded-lg bg-white p-6"
+        className="w-131.75 max-w-full max-h-[90vh] overflow-y-auto scrollbar-none relative rounded-lg bg-white p-5 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
@@ -41,11 +41,11 @@ export default function ViewAppointmentModal({
           </button>
         </div>
 
-        <div className="flex gap-2 mt-3 border-t border-b py-5 border-[#D9D9D9]">
+        <div className="flex gap-3 mt-3 border-t border-b py-5 border-[#D9D9D9]">
           <Avatar name={appointment.doctor.docName} image={appointment.doctor.docImg} size="lg" />
 
-          <div className="flex flex-col gap-1">
-            <h1 className="text-[#141313] fontOutfit font-medium text-[20px]">
+          <div className="flex flex-col gap-1 min-w-0">
+            <h1 className="text-[#141313] fontOutfit font-medium text-lg sm:text-[20px] break-words">
               {appointment.doctor.docName}
             </h1>
 
@@ -55,21 +55,17 @@ export default function ViewAppointmentModal({
           </div>
         </div>
 
-        <div className="flex items-start justify-between pt-5">
-          <ul className="space-y-2 text-[#757575] font-light text-[16px] fontOutfit">
-            <li>Department</li>
-            <li>Date</li>
-            <li>Time</li>
-            <li>Reason</li>
-          </ul>
-
-          <ul className="space-y-2 text-[16px] fontOutfit font-normal">
-            <li>{appointment.department}</li>
-            <li>{formattedDate}</li>
-            <li>{appointment.time}</li>
-            <li>{appointment.reason || "—"}</li>
-          </ul>
-        </div>
+        {/* One row per detail, so a long value wraps beside its own label. */}
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 pt-5 text-[16px] fontOutfit">
+          <dt className="text-[#757575] font-light">Department</dt>
+          <dd className="font-normal">{appointment.department}</dd>
+          <dt className="text-[#757575] font-light">Date</dt>
+          <dd className="font-normal">{formattedDate}</dd>
+          <dt className="text-[#757575] font-light">Time</dt>
+          <dd className="font-normal">{appointment.time}</dd>
+          <dt className="text-[#757575] font-light">Reason</dt>
+          <dd className="font-normal break-words">{appointment.reason || "—"}</dd>
+        </dl>
 
         <div className="flex gap-3 mt-6">
           <Button
