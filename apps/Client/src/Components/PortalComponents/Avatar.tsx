@@ -34,6 +34,8 @@ export default function Avatar({ name, image, size = "md" }: Props) {
       <img
         src={image}
         alt=""
+        loading="lazy"
+        decoding="async"
         className={`${className} object-cover`}
         onError={() => setFailedSrc(image)}
       />

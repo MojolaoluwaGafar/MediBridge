@@ -1,5 +1,5 @@
 import AppLayout from '../Layout/AppLayout'
-import Image from "../assets/Frame 2085662224.svg"
+import Image from "../assets/home-hero.webp"
 import WhyMediBridge from '../Components/HomePageComponents/WhyMediBridge'
 import Explore from '../Components/HomePageComponents/Explore'
 import Patientstory from "../Components/HomePageComponents/Patientstories"
@@ -8,8 +8,12 @@ import NewsLetter from "../Components/HomePageComponents/NewsLetter"
 import Button from '../Components/Button'
 import { useAuth } from '../Hooks/Auth/useAuth'
 import { useNavigate } from 'react-router'
-import { useState } from 'react'
-import BookAppointmentModal from '../Components/PatientPageComponents/DashBoard/BookAppointmentModal'
+import { Suspense, useState } from 'react'
+import { lazyPage } from '../utils/lazyPage'
+
+// Only signed-in visitors who press "Book Appointment" need the booking flow,
+// so its code downloads on that click rather than with the home page.
+const BookAppointmentModal = lazyPage(() => import('../Components/PatientPageComponents/DashBoard/BookAppointmentModal'))
 
 export default function HomePage() {
   const [showBooking, setShowBooking] = useState(false);
@@ -35,9 +39,9 @@ export default function HomePage() {
       heading : "Healthcare That Connects You",
       subHeading : "Book appointments, talk with trusted doctors, receive support, and get instant AI health guidance in one calm experience.",
       image : Image,
-      others : <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-5 fontOutfit'>
+      others : <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-5 fontOutfit w-full'>
       <Button onClick={handleBookAppointment} type="button" content="Book Appointment" variant="secondary" width="w-full max-w-[236px] sm:w-[236px]" />
-      <Button onClick={handleAISupport} type="button" content="Chat With AI Support"  variant="primaryWBorder"  width="w-full max-w-[240px] sm:w-[240px]"
+      <Button onClick={handleAISupport} type="button" content="Chat With AI Support"  variant="primaryWBorder"  width="w-[250px] max-w-[250px] sm:w-[250px]"
       className='bandGreen' />
       </div>
     }}>
@@ -48,12 +52,14 @@ export default function HomePage() {
       <NewsLetter />
 
        {showBooking && (
+        <Suspense fallback={null}>
         <BookAppointmentModal
           onClose={() => setShowBooking(false)}
           onBooked={() => {
             setShowBooking(false);
           }}
         />
+        </Suspense>
       )}
     </AppLayout>
   )

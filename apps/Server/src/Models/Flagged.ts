@@ -45,5 +45,8 @@ const FlaggedMessageSchema = new Schema<IFlaggedMessage>({
 });
 
 FlaggedMessageSchema.index({ status: 1, flaggedAt: -1 });
+// A doctor sees flags from their patients or on their appointments.
+FlaggedMessageSchema.index({ userId: 1, flaggedAt: -1 });
+FlaggedMessageSchema.index({ appointmentId: 1 }, { sparse: true });
 
 export default mongoose.model<IFlaggedMessage>("FlaggedMessage", FlaggedMessageSchema);

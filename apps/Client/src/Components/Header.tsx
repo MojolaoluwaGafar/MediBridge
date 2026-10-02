@@ -86,11 +86,18 @@ export default function Header({ className, heading, subHeading, others, image }
         </div>
       </div>
 
-      <img
-        className="hidden lg:flex lg:w-225.5 absolute lg:top-107 left-1/2 transform -translate-x-1/2"
-        src={image}
-        alt=""
-      />
+      {/* The largest thing on screen on desktop, so it loads first. */}
+      {image && (
+        <img
+          className="hidden lg:flex lg:w-225.5 absolute lg:top-107 left-1/2 transform -translate-x-1/2"
+          src={image}
+          alt=""
+          width={902}
+          height={641}
+          fetchPriority="high"
+          decoding="async"
+        />
+      )}
 
       {menuOpen && (
         <div

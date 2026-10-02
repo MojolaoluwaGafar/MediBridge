@@ -89,4 +89,13 @@ AppointmentSchema.index(
     { unique: true, partialFilterExpression: { status: "confirmed" }, name: "one_confirmed_booking_per_slot" }
 );
 
+// Query indexes (see docs/architecture/performance.md). Field order follows
+// equality -> sort -> range: the person, then status, then the date range.
+// A patient's own list, and marking their past visits completed:
+AppointmentSchema.index({ userId: 1, status: 1, date: 1 });
+// A doctor's schedule, dashboard counts and free-slot lookups:
+AppointmentSchema.index({ doctor: 1, status: 1, date: 1 });
+// "Has this patient booked with this doctor?" (messages, patient profile):
+AppointmentSchema.index({ doctor: 1, userId: 1 });
+
 export const Appointment = mongoose.model<IAppointment>("Appointment", AppointmentSchema);

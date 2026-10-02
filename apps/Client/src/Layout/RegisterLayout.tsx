@@ -23,7 +23,7 @@ export default function RegisterLayout({ heading, subHeading, children, ul, imag
               </h1>
               <p className="text-[#3E3B3B] text-sm md:text-[18px] py-2 fontOutfit">{subHeading}</p>
               <div className="pt-4 pb-8 fontOutfit">{ul}</div>
-              <img className="w-full max-w-md lg:w-109 h-auto lg:h-[314.05px]" src={image} alt="Illustration" />
+              <img className="w-full max-w-md lg:w-109 h-auto lg:h-[314.05px]" src={image} alt="Illustration" loading="lazy" decoding="async" />
             </div>
           </div>
         </div>

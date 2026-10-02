@@ -4,7 +4,6 @@ import { GrPrevious, GrNext } from "react-icons/gr";
 import Jordan from "../../assets/121054511_158666599245775_8379300751700607816_n (1).svg"
 import Priya from "../../assets/121054511_158666599245775_8379300751700607816_n.svg"
 import Marcus from "../../assets/121054511_158666599245775_8379300751700607816_n.svg"
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface Card {
   id?: number,
@@ -17,24 +16,20 @@ interface Card {
 
 const Card = ({ icon, comment, avatar, name, role }: Card) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -50 }}
-      transition={{ duration: 0.5 }}
-      className="border border-[#DDDDDD] bg-[#EEEDED] w-full min-w-0 p-4 md:p-5 flex flex-col justify-center rounded-md gap-4"
+    <div
+      className="motion-safe:animate-fade-up border border-[#DDDDDD] bg-[#EEEDED] w-full min-w-0 p-4 md:p-5 flex flex-col justify-center rounded-md gap-4"
     >
       <div>{icon}</div>
       <h1 className="text-[#403F3F] text-sm md:text-base">{comment}</h1>
       <span className="w-full h-0.5 bg-[#D2D0D0]"></span>
       <div className="flex items-center gap-3">
-        <img className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" src={avatar} alt="" />
+        <img className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover" src={avatar} alt="" loading="lazy" decoding="async" />
         <div className="flex flex-col gap-1 md:gap-2 justify-center">
           <p className="text-[#363636] font-semibold text-sm md:text-base">{name}</p>
           <p className="text-[#656565] text-xs md:text-sm">{role}</p>
         </div>
       </div>
-    </motion.div>
+    </div>
   )
 }
 
@@ -106,11 +101,10 @@ export default function Patientstories() {
           <button type="button" onClick={handleNext} className="bg-[#28574E] rounded-full w-9 h-9 md:w-10.75 md:h-10.75 text-white text-lg md:text-[20px] flex justify-center items-center"><GrNext /></button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-8">
-          <AnimatePresence>
-            {stories[index].map((story, id) => (
-              <Card key={id} {...story} />
-            ))}
-          </AnimatePresence>
+          {/* Keyed by page so the cards replay their entrance animation. */}
+          {stories[index].map((story, id) => (
+            <Card key={`${index}-${id}`} {...story} />
+          ))}
         </div>
       </div>
     </div>

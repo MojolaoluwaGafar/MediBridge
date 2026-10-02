@@ -1,6 +1,7 @@
 import express, { Application,Request, Response} from "express"
 import dotenv from 'dotenv'
 import cors from "cors"
+import { compression, compressionEnabled } from "./middlewares/Performance"
 import connectDB from "./config/DB"
 import DepartmentRoutes from "./Routes/DepartmentRoutes"
 import Authroutes from "./Routes/AuthRoutes"
@@ -23,6 +24,7 @@ const app : Application = express()
 // client IP, which the rate limiter keys on.
 app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1))
 app.use(httpLogger)
+if (compressionEnabled()) app.use(compression())
 app.use(express.json())
 
 // Extra allowed browser origins: CORS_ORIGINS (comma separated) plus

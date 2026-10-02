@@ -1,7 +1,7 @@
 import { useApiMutation } from "../Api/useApiMutation";
 import { authService } from "../../API/services/authService";
 
-import type { LoginInput } from "../../Validation/ActivationSchema";
+import type { LoginInput } from "../../Validation/LoginSchema";
 import type { ILoginRes } from "../../types/apiReqRes";
 
 export function useLogin() {

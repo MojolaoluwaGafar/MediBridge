@@ -13,7 +13,7 @@ export default function Footer() {
     <div className="w-full bg-[#E2DFDF] px-5 md:px-10 py-6">
       <div className="mx-auto container flex flex-col md:flex-row items-center md:justify-between gap-4 md:gap-0 fontOutfit text-center md:text-left">
         
-        <img src={Logo} alt="MediBridge Logo" className="w-32 md:w-auto" />
+        <img src={Logo} alt="MediBridge Logo" className="w-32 md:w-auto" loading="lazy" decoding="async" />
 
         <div className="flex flex-wrap justify-center gap-3 md:gap-6">
           {links.map((link, index) => (

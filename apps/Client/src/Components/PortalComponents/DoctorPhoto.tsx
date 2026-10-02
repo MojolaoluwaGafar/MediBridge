@@ -22,7 +22,7 @@ export default function DoctorPhoto({ name, image, className }: Props) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   if (image && failedSrc !== image) {
-    return <img className={`${className} object-cover`} src={image} alt={name} onError={() => setFailedSrc(image)} />;
+    return <img className={`${className} object-cover`} src={image} alt={name} loading="lazy" decoding="async" onError={() => setFailedSrc(image)} />;
   }
 
   return (

@@ -50,6 +50,10 @@ services:
       # Render puts one proxy in front of the app (used by the rate limiter).
       - key: TRUST_PROXY_HOPS
         value: "1"
+      # Render's edge already compresses responses with Brotli, so the app
+      # doesn't (it would only cost CPU). See docs/architecture/performance.md.
+      - key: ENABLE_COMPRESSION
+        value: "false"
 
       # Database
       - key: DB_CONNECTION_URL

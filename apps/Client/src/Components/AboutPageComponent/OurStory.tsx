@@ -1,4 +1,4 @@
-import StoryImage from "../../assets/about-story.jpg";
+import StoryImage from "../../assets/about-story.webp";
 
 const OurStory = () => {
   return (
@@ -9,6 +9,8 @@ const OurStory = () => {
             <img
               src={StoryImage}
               alt="Our Story"
+              loading="lazy"
+              decoding="async"
               className="w-full h-[580px] object-cover rounded-[32px] shadow-lg"
             />
           </div>

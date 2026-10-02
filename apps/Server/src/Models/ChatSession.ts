@@ -37,4 +37,7 @@ const ChatSessionSchema = new Schema<IChatSession>(
   { timestamps: true }
 );
 
+// A signed-in user's chat history, newest first.
+ChatSessionSchema.index({ userId: 1, role: 1, updatedAt: -1 });
+
 export const ChatSession = mongoose.model<IChatSession>("ChatSession", ChatSessionSchema);

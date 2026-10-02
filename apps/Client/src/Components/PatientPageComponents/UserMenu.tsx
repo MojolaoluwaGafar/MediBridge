@@ -1,5 +1,4 @@
 import { ChevronDown, ChevronUp, Settings } from "lucide-react";
-import { motion } from "framer-motion";
 import { PiSignOut } from "react-icons/pi";
 import UserAvatar from "../../assets/user-avatar-filled-svgrepo-com.svg";
 import type { AuthUser } from "../../types";
@@ -60,11 +59,8 @@ export default function UserMenu({
       </button>
 
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="absolute top-14 right-0 sm:top-16 bg-white rounded-lg shadow-lg border border-[#E7E4E4] p-3 w-52 z-50"
+        <div
+          className="motion-safe:animate-drop-in absolute top-14 right-0 sm:top-16 bg-white rounded-lg shadow-lg border border-[#E7E4E4] p-3 w-52 z-50"
         >
           <div className="md:hidden border-b border-[#E7E4E4] pb-3 mb-3">
             <p className="font-medium text-sm">
@@ -98,7 +94,7 @@ export default function UserMenu({
             <PiSignOut size={18} />
             Log out
           </button>
-        </motion.div>
+        </div>
       )}
     </div>
   );

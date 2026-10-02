@@ -1,5 +1,5 @@
 import RegisterLayout from '../../Layout/RegisterLayout'
-import image from "../../assets/identityForm.svg"
+import image from "../../assets/identity-form.webp"
 import Vector from "../../assets/Container.svg"
 import Input from '../../Components/Input'
 import Button from '../../Components/Button'

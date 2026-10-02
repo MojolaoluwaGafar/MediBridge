@@ -41,12 +41,8 @@ export const setPasswordSchema = z.object({
 export type SetPasswordInput = z.infer<typeof setPasswordSchema>;
 
 
-export const loginSchema = z.object({
-    UserId : z.string().min(1, "User ID is required"),
-    password : z.string().min(1, "Password is required")
-})
-
-export type LoginInput = z.infer<typeof loginSchema>;
+// Lives in LoginSchema.ts (see there); re-exported for existing imports.
+export { loginSchema, type LoginInput } from "./LoginSchema";
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),

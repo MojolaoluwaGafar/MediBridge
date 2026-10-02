@@ -26,5 +26,7 @@ const MessageSchema = new Schema<IMessage>(
 );
 
 MessageSchema.index({ patient: 1, doctor: 1, createdAt: -1 });
+// The doctor's side of the inbox (their conversations, newest first).
+MessageSchema.index({ doctor: 1, createdAt: -1 });
 
 export const Message = mongoose.model<IMessage>("Message", MessageSchema);

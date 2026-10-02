@@ -118,4 +118,9 @@ const UserSchema: Schema<IUser> = new Schema<IUser>({
   },
 });
 
+// Sign-in matches User IDs ignoring case (authService.findByUserId). A query
+// with a collation can only use an index with the same collation, so this
+// sits beside the unique, case-sensitive index on UserId.
+UserSchema.index({ UserId: 1 }, { name: "UserId_case_insensitive", collation: { locale: "en", strength: 2 } });
+
 export const User = mongoose.model<IUser>("User", UserSchema);

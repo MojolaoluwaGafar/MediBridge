@@ -1,28 +1,34 @@
 import './App.css'
+import { Suspense } from "react"
 import { Routes, Route } from 'react-router'
-import Login from './Pages/Auth/Login'
-import ForgotPassword from './Pages/Auth/ForgotPassword'
-import ResetPassword from './Pages/Auth/ResetPassword'
-import VerifyRecovery from './Pages/Auth/VerifyRecovery'
-import Activate from './Pages/Auth/Activate'
-import SetPassword from './Pages/Auth/SetPassword'
-import VerifyActivation from './Pages/Auth/VerifyActivation'
 
+// Home and Login are what most visits start on, so they ship in the main
+// bundle. Every other page is its own chunk, downloaded the first time it is
+// opened (see docs/architecture/performance.md).
 import HomePage from './Pages/HomePage'
-import DepartmentPage from './Pages/DepartmentPage'
-import SupportPage from './Pages/SupportPage'
+import Login from './Pages/Auth/Login'
 import ScrollToTop from './Components/ScrollToTop'
-import PatientPage from './Pages/PatientPage'
-import Error404 from './Components/Error404'
 import ProtectRoute from './Components/ProtectRoute'
-import AboutPage from './Pages/AboutPage'
-import PrivacyPage from './Pages/PrivacyPage'
-import TermsPage from './Pages/TermsPage'
-import ContactPage from './Pages/ContactPage'
-import PortalComingSoon from './Pages/PortalComingSoon'
-import DoctorPage from './Pages/DoctorPage'
+import PageLoader from './Components/PageLoader'
+import { lazyPage } from './utils/lazyPage'
 
-import UnderConstruction from "./Components/UnderConstruction"
+const ForgotPassword = lazyPage(() => import('./Pages/Auth/ForgotPassword'))
+const ResetPassword = lazyPage(() => import('./Pages/Auth/ResetPassword'))
+const VerifyRecovery = lazyPage(() => import('./Pages/Auth/VerifyRecovery'))
+const Activate = lazyPage(() => import('./Pages/Auth/Activate'))
+const SetPassword = lazyPage(() => import('./Pages/Auth/SetPassword'))
+const VerifyActivation = lazyPage(() => import('./Pages/Auth/VerifyActivation'))
+const DepartmentPage = lazyPage(() => import('./Pages/DepartmentPage'))
+const SupportPage = lazyPage(() => import('./Pages/SupportPage'))
+const PatientPage = lazyPage(() => import('./Pages/PatientPage'))
+const DoctorPage = lazyPage(() => import('./Pages/DoctorPage'))
+const AboutPage = lazyPage(() => import('./Pages/AboutPage'))
+const PrivacyPage = lazyPage(() => import('./Pages/PrivacyPage'))
+const TermsPage = lazyPage(() => import('./Pages/TermsPage'))
+const ContactPage = lazyPage(() => import('./Pages/ContactPage'))
+const PortalComingSoon = lazyPage(() => import('./Pages/PortalComingSoon'))
+const Error404 = lazyPage(() => import('./Components/Error404'))
+const UnderConstruction = lazyPage(() => import("./Components/UnderConstruction"))
 
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css";
@@ -31,6 +37,7 @@ function App() {
 
   return (
     <>
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/activate" element={<Activate />} />
@@ -55,6 +62,7 @@ function App() {
       
       <Route path="*" element={<Error404 />} />
     </Routes>
+    </Suspense>
     
     <ToastContainer  position='top-center'
     autoClose={3000}
