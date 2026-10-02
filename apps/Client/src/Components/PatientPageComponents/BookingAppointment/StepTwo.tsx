@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DocProfileModal from "./DocProfileModal";
+import DoctorPhoto from "../../PortalComponents/DoctorPhoto";
 import { useDoctors } from "../../../Hooks/Doctors/useDoctors";
 import type { IDoctor } from "../../../types/doctor";
 import type { IDocProfile } from "./DocProfileModal";
@@ -36,11 +37,7 @@ const Card = ({
       }`}
     >
       <div className="flex flex-col gap-4 sm:flex-row">
-        <img
-          className="h-24 w-20 rounded object-cover sm:h-[77px] sm:w-[70px]"
-          src={docImg}
-          alt="doctorImg"
-        />
+        <DoctorPhoto name={docName} image={docImg} className="h-24 w-20 rounded sm:h-[77px] sm:w-[70px]" />
 
         <div className="flex flex-col gap-1">
           <h1 className="fontOutfit text-lg sm:text-xl font-medium text-[#141313]">

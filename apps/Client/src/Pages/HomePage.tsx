@@ -37,7 +37,7 @@ export default function HomePage() {
       image : Image,
       others : <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-5 fontOutfit'>
       <Button onClick={handleBookAppointment} type="button" content="Book Appointment" variant="secondary" width="w-full max-w-[236px] sm:w-[236px]" />
-      <Button onClick={handleAISupport} type="button" content="Chat With AI Support"  variant="primaryWBorder"  width="w-full max-w-[236px] sm:w-[236px]"
+      <Button onClick={handleAISupport} type="button" content="Chat With AI Support"  variant="primaryWBorder"  width="w-full max-w-[240px] sm:w-[240px]"
       className='bandGreen' />
       </div>
     }}>

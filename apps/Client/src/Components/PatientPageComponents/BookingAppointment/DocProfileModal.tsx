@@ -1,5 +1,6 @@
 import type { ISelectDoc } from './StepTwo'
 import { X } from "lucide-react" 
+import DoctorPhoto from "../../PortalComponents/DoctorPhoto"
 
 export interface IDocProfile extends ISelectDoc {
   about: string;
@@ -37,11 +38,7 @@ export default function DocProfileModal({
         <div className="w-full h-0.5 bg-[#E7E4E4]" />
 
         <div className="flex flex-col sm:flex-row gap-4 px-6 py-5">
-          <img
-            className="w-20 h-24 sm:w-[70px] sm:h-[77px] rounded object-cover"
-            src={docImg}
-            alt="doctorImg"
-          />
+          <DoctorPhoto name={docName} image={docImg} className="w-20 h-24 sm:w-[70px] sm:h-[77px] rounded" />
           <div className="flex flex-col gap-1">
             <h1 className="text-[#141313] fontOutfit font-medium text-lg sm:text-xl">
               {docName}

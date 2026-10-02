@@ -1,3 +1,5 @@
+import DoctorPhoto from "../../PortalComponents/DoctorPhoto";
+
 type Props = {
   docImg: string;
   docName: string;
@@ -35,11 +37,7 @@ export default function StepFive({
       </h1>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <img
-          className="h-24 w-20 rounded object-cover sm:h-[77px] sm:w-[70px]"
-          src={docImg}
-          alt="doctorImg"
-        />
+        <DoctorPhoto name={docName} image={docImg} className="h-24 w-20 rounded sm:h-[77px] sm:w-[70px]" />
 
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-medium text-[#141313] fontOutfit">

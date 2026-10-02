@@ -1,4 +1,5 @@
 import Button from "../../Button";
+import DoctorPhoto from "../../PortalComponents/DoctorPhoto";
 import { X } from "lucide-react";
 import type { IAppointment } from "../../../types/appointment";
 import { formatDateString } from "../../../utils/formatDate";
@@ -59,11 +60,7 @@ export default function ViewRescheduledAppointment({
           </h1>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <img
-              className="h-20 w-20 rounded object-cover"
-              src={doctor.docImg}
-              alt={doctor.docName}
-            />
+            <DoctorPhoto name={doctor.docName} image={doctor.docImg} className="h-20 w-20 rounded" />
 
             <div className="flex flex-col gap-1">
               <h1 className="text-[18px] font-medium text-[#141313] fontOutfit sm:text-[20px]">

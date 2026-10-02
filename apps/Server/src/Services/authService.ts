@@ -37,11 +37,22 @@ function smsNumberFor(user: IUser): string | null {
   return normalizePhone(user.RegisteredNumber) ?? normalizePhone(user.PhoneNumber);
 }
 
+// User IDs are matched ignoring case and stray spaces, since people type
+// "p015" or autofill adds a trailing space. An exact match wins in case two
+// IDs ever differ only by case. (The per-account login limit keys on the same
+// normalised ID.)
+const ID_COLLATION = { locale: "en", strength: 2 } as const;
+async function findByUserId(rawUserId: string, extra: Record<string, unknown> = {}) {
+  const UserId = rawUserId.trim();
+  if (!UserId) return null;
+  return (await User.findOne({ ...extra, UserId })) ?? User.findOne({ ...extra, UserId }).collation(ID_COLLATION);
+}
+
 function findUser({ id, email, UserId }: UserLookup) {
   const normalizedEmail = email?.trim().toLowerCase();
   if (id) return User.findById(id);
   if (normalizedEmail) return User.findOne({ Email: normalizedEmail });
-  if (UserId) return User.findOne({ UserId });
+  if (UserId) return findByUserId(UserId);
   return null;
 }
 
@@ -89,7 +100,7 @@ export async function startActivation(UserId: string, Email: string, RegisteredN
   // Compare phone numbers by value, not by text, so "+234 803 123 4567"
   // matches a stored "08031234567". Same error for every mismatch so the
   // response never reveals which detail was wrong.
-  const user = await User.findOne({ UserId: UserId.trim(), Email: Email.trim().toLowerCase() });
+  const user = await findByUserId(UserId, { Email: Email.trim().toLowerCase() });
   if (!user || !samePhone(user.RegisteredNumber, RegisteredNumber)) {
     throw new ServiceError(404, "Patient not found");
   }
@@ -131,7 +142,7 @@ export function setPassword(passwordToken: string, password: string) {
 }
 
 export async function authenticate(UserId: string, password: string) {
-  const user = await User.findOne({ UserId });
+  const user = await findByUserId(UserId);
   if (!user) throw new ServiceError(404, "User not found");
   if (!user.Password) throw new ServiceError(400, "No Password set for this account");
 
