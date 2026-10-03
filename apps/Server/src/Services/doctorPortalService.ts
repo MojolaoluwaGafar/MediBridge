@@ -3,7 +3,7 @@ import { Appointment, type AppointmentStatus, type IAppointment } from "../Model
 import { Activity } from "../Models/Activity";
 import { type IDoctorDoc } from "../Models/Doctor";
 import Flagged from "../Models/Flagged";
-import { MedicalRecord, RECORD_TYPE_LABELS } from "../Models/MedicalRecord";
+import { MedicalRecord, RECORD_PUBLIC_PROJECTION, RECORD_TYPE_LABELS } from "../Models/MedicalRecord";
 import { Message } from "../Models/Message";
 import { User } from "../Models/User";
 import { VisitNote } from "../Models/VisitNote";
@@ -17,9 +17,9 @@ import {
   SLOT_MINUTES,
   todayInHospital,
 } from "../Utils/appointmentTime";
-import type { AvailabilityInput, APPOINTMENT_VIEWS } from "../Validation/doctorSchema";
+import type { AvailabilityInput, APPOINTMENT_VIEWS, WriteRecordInput } from "../Validation/doctorSchema";
 import { WEEK_DAYS } from "../Validation/doctorSchema";
-import type { RecordPdfInput } from "./recordPdf";
+import { toPublicRecord } from "../Utils/recordDownload";
 import { recordActivity } from "./activityService";
 import { assertStillOpen, completePastAppointments, describe } from "./appointmentService";
 import { ServiceError } from "./errors";
@@ -73,7 +73,21 @@ const toAppointmentDto = (a: LeanAppointment) => ({
   urgency: a.urgency ?? null,
   createdAt: a.createdAt,
   patient: a.userId && "FirstName" in a.userId ? toPatientSummary(a.userId) : null,
+  hasRecord: false,
 });
+
+type AppointmentDto = ReturnType<typeof toAppointmentDto>;
+
+// Marks the visits this doctor has already written a record for.
+async function withRecordFlags(doctor: IDoctorDoc, appointments: AppointmentDto[]) {
+  if (!appointments.length) return appointments;
+  const written = await MedicalRecord.distinct("appointment", {
+    doctor: doctor._id,
+    appointment: { $in: appointments.map((a) => new ObjectId(a._id)) },
+  });
+  const ids = new Set(written.map(String));
+  return appointments.map((a) => ({ ...a, hasRecord: ids.has(a._id) }));
+}
 
 export const toDoctorProfile = (doctor: IDoctorDoc) => ({
   _id: String(doctor._id),
@@ -138,7 +152,7 @@ export async function listAppointments(doctor: IDoctorDoc, view: AppointmentView
   const appointments = sortByDateTime(await findDoctorAppointments(doctor, filter));
   // History reads newest first; the schedule reads soonest first.
   if (view === "completed" || view === "cancelled") appointments.reverse();
-  return appointments.slice(0, 500).map(toAppointmentDto);
+  return withRecordFlags(doctor, appointments.slice(0, 500).map(toAppointmentDto));
 }
 
 async function findOwnAppointment(doctor: IDoctorDoc, appointmentId: string) {
@@ -250,6 +264,8 @@ async function recentActivity(doctor: IDoctorDoc, limit = 8) {
       _id: String(e._id),
       type: e.type,
       actor: e.actor ?? "patient",
+      // For "record" events: what was added.
+      message: e.type === "record" ? e.message : null,
       timestamp: e.timestamp,
       patient: toPatientSummary(e.userId as unknown as PatientDoc | null),
       date: appointment?.date ?? null,
@@ -367,14 +383,17 @@ export async function getPatientProfile(doctor: IDoctorDoc, patientIdText: strin
     notesFor(doctor, patient._id),
   ]);
 
-  const records = shared
-    ? await MedicalRecord.find({ patient: patient._id }, { sections: 0 })
-        .sort({ visitDate: -1 })
-        .populate("doctor", "docName department")
-        .lean()
-    : [];
+  // With sharing on, the patient's whole history; otherwise only the records
+  // this doctor wrote, which they can always see.
+  const records = await MedicalRecord.find(
+    shared ? { patient: patient._id } : { patient: patient._id, doctor: doctor._id },
+    { sections: 0, ...RECORD_PUBLIC_PROJECTION }
+  )
+    .sort({ visitDate: -1, createdAt: -1 })
+    .populate("doctor", "docName department")
+    .lean();
 
-  const ordered = sortByDateTime(appointments).map(toAppointmentDto);
+  const ordered = await withRecordFlags(doctor, sortByDateTime(appointments).map(toAppointmentDto));
   const today = todayInHospital();
 
   return {
@@ -387,51 +406,112 @@ export async function getPatientProfile(doctor: IDoctorDoc, patientIdText: strin
     // Newest first for the history table.
     appointments: ordered.reverse(),
     recordsShared: Boolean(shared),
-    records,
+    records: records.map((r) => ({
+      ...r,
+      writtenByYou: String((r.doctor as unknown as { _id?: Id } | null)?._id ?? "") === String(doctor._id),
+    })),
     notes: notes.map(toNoteDto),
   };
 }
 
+// A record the doctor may open: one they wrote, or any of the patient's
+// records while the patient shares them.
 async function findSharedRecord(doctor: IDoctorDoc, patientIdText: string, recordId: string) {
   const patient = await findOwnPatient(doctor, patientIdText);
-  if (!(await recordsShared(doctor, patient._id))) {
-    throw new ServiceError(404, "This patient hasn't shared their records with you.");
-  }
   if (!mongoose.Types.ObjectId.isValid(recordId)) throw new ServiceError(404, "Record not found");
 
-  const record = await MedicalRecord.findOne({ _id: recordId, patient: patient._id })
+  const shared = await recordsShared(doctor, patient._id);
+  const record = await MedicalRecord.findOne({
+    _id: recordId,
+    patient: patient._id,
+    ...(shared ? {} : { doctor: doctor._id }),
+  })
     .populate("doctor", "docName docImg department")
     .lean();
-  if (!record) throw new ServiceError(404, "Record not found");
+  if (!record) {
+    throw new ServiceError(404, shared ? "Record not found" : "This patient hasn't shared their records with you.");
+  }
   return { patient, record };
 }
 
-export async function getSharedRecord(doctor: IDoctorDoc, patientIdText: string, recordId: string) {
-  return (await findSharedRecord(doctor, patientIdText, recordId)).record;
+// ---------- Records the doctor writes ----------
+
+// "2 Oct 2026, 7:05 PM" in hospital time, for addendum headings.
+const stamp = (date = new Date()) =>
+  new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: process.env.HOSPITAL_TIMEZONE || "Africa/Lagos",
+  }).format(date);
+
+// A record for one of the doctor's visits, once it has happened. The patient
+// sees it straight away in Medical Records, marked as written by this doctor.
+export async function writeRecord(doctor: IDoctorDoc, authorUserId: string, appointmentId: string, input: WriteRecordInput) {
+  const appointment = await findOwnAppointment(doctor, appointmentId);
+  const happened =
+    appointment.status === "completed" ||
+    (appointment.status === "confirmed" &&
+      (appointment.date < todayInHospital() ||
+        (appointment.date === todayInHospital() && (parseTimeLabel(appointment.time) ?? 0) <= minutesNowInHospital())));
+  if (!happened) {
+    throw new ServiceError(400, "You can write a record once the visit has taken place.");
+  }
+  if (!appointment.userId) throw new ServiceError(400, "This appointment has no patient.");
+
+  const record = await MedicalRecord.create({
+    patient: appointment.userId,
+    doctor: doctor._id,
+    appointment: appointment._id,
+    type: input.type,
+    title: input.title,
+    department: appointment.department,
+    // Midday UTC so the date reads the same in every time zone.
+    visitDate: new Date(`${appointment.date}T12:00:00Z`),
+    summary: input.summary || undefined,
+    sections: input.sections,
+    createdBy: new ObjectId(authorUserId),
+  });
+
+  await recordActivity(
+    appointment.userId.toString(),
+    "record",
+    `${RECORD_TYPE_LABELS[input.type]} from ${doctor.docName}: ${input.title}`,
+    { doctor: doctor._id as Id, appointment: appointment._id as Id, actor: "doctor" }
+  );
+
+  return MedicalRecord.findById(record._id).populate("doctor", "docName docImg department").lean();
 }
 
-export async function getSharedRecordForPdf(
-  doctor: IDoctorDoc,
-  patientIdText: string,
-  recordId: string
-): Promise<{ fileName: string; pdf: RecordPdfInput }> {
-  const { patient, record } = await findSharedRecord(doctor, patientIdText, recordId);
-  const author = record.doctor as unknown as { docName?: string } | undefined;
-  return {
-    fileName: `${record.title.replace(/[^\w-]+/g, "-").replace(/-+/g, "-")}.pdf`,
-    pdf: {
-      title: record.title,
-      typeLabel: RECORD_TYPE_LABELS[record.type],
-      department: record.department,
-      visitDate: record.visitDate,
-      doctorName: author?.docName,
-      patientName: `${patient.FirstName} ${patient.LastName}`,
-      patientId: patient.UserId,
-      summary: record.summary,
-      sections: record.sections ?? [],
-    },
-  };
+// Records aren't edited once the patient can see them. A correction or later
+// finding is added as a dated addendum, and the original text stays.
+export async function addAddendum(doctor: IDoctorDoc, recordId: string, body: string) {
+  if (!mongoose.Types.ObjectId.isValid(recordId)) throw new ServiceError(404, "Record not found");
+  const record = await MedicalRecord.findOne({ _id: recordId, doctor: doctor._id });
+  if (!record) throw new ServiceError(404, "Record not found, or it wasn't written by you.");
+
+  record.sections.push({ heading: `Addendum, ${stamp()}`, body });
+  await record.save();
+
+  await recordActivity(record.patient.toString(), "record", `Addendum from ${doctor.docName}: ${record.title}`, {
+    doctor: doctor._id as Id,
+    appointment: record.appointment,
+    actor: "doctor",
+  });
+
+  return MedicalRecord.findById(record._id).populate("doctor", "docName docImg department").lean();
 }
+
+export async function getSharedRecord(doctor: IDoctorDoc, patientIdText: string, recordId: string) {
+  return toPublicRecord((await findSharedRecord(doctor, patientIdText, recordId)).record);
+}
+
+// The full record and patient, for sendRecordDownload. Server-side use only.
+export const getSharedRecordForDownload = (doctor: IDoctorDoc, patientIdText: string, recordId: string) =>
+  findSharedRecord(doctor, patientIdText, recordId);
+
 
 export async function addVisitNote(doctor: IDoctorDoc, patientIdText: string, body: string, appointmentId?: string) {
   const patient = await findOwnPatient(doctor, patientIdText);

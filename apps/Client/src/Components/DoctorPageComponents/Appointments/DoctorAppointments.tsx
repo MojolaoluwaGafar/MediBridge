@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { CalendarDays, Search } from "lucide-react";
+import { CalendarDays, FileText, Search } from "lucide-react";
 import PageHeader from "../../PortalComponents/PageHeader";
 import EmptyState from "../../PortalComponents/EmptyState";
 import Avatar from "../../PortalComponents/Avatar";
@@ -11,7 +11,8 @@ import { doctorPortalService } from "../../../API/services/doctorPortalService";
 import type { IDoctorAppointment } from "../../../types/doctorPortal";
 import { todayDateString } from "../../../utils/formatDate";
 import { useDoctorTab } from "../DoctorTabs";
-import { RecordsSharedChip, StatusChip, UrgencyChip } from "../shared";
+import WriteRecordModal from "../Records/WriteRecordModal";
+import { Chip, RecordsSharedChip, StatusChip, UrgencyChip } from "../shared";
 import { dayHeading, hasStarted, minutesOf, patientName } from "../../../utils/doctorFormat";
 
 type View = "Upcoming" | "Today" | "Completed" | "Cancelled";
@@ -29,6 +30,7 @@ function AppointmentRow({
   onMessage,
   onComplete,
   onCancel,
+  onWriteRecord,
 }: {
   appointment: IDoctorAppointment;
   today: string;
@@ -37,10 +39,13 @@ function AppointmentRow({
   onMessage: () => void;
   onComplete: () => void;
   onCancel: () => void;
+  onWriteRecord: () => void;
 }) {
   const open = appointment.status === "confirmed";
   const canComplete = open && hasStarted(appointment, today);
   const canCancel = open && appointment.date >= today;
+  // A record can be written once the visit has happened.
+  const canWriteRecord = appointment.status === "completed" || canComplete;
 
   return (
     <li className="flex flex-col gap-3 p-4 sm:p-5 md:flex-row md:items-center">
@@ -62,6 +67,7 @@ function AppointmentRow({
             <StatusChip status={appointment.status} />
             <UrgencyChip level={appointment.urgency?.level} />
             {appointment.shareRecords && <RecordsSharedChip />}
+            {appointment.hasRecord && <Chip className="bg-[#EAF2FF] text-[#1D4E89]"><FileText size={12} /> Record written</Chip>}
           </div>
         </div>
       </div>
@@ -69,6 +75,16 @@ function AppointmentRow({
       <div className="flex flex-wrap items-center gap-2 pl-[4.75rem] md:shrink-0 md:pl-0">
         {canComplete && (
           <Button type="button" size="sm" width="w-auto" content={busy ? "Saving…" : "Mark completed"} disabled={busy} onClick={onComplete} />
+        )}
+        {canWriteRecord && appointment.patient && (
+          <Button
+            type="button"
+            size="sm"
+            width="w-auto"
+            variant={canComplete ? "outline" : "primary"}
+            content={appointment.hasRecord ? "Add another record" : "Write record"}
+            onClick={onWriteRecord}
+          />
         )}
         {appointment.patient && (
           <Button type="button" size="sm" width="w-auto" variant="outline" content="Message" onClick={onMessage} />
@@ -88,6 +104,7 @@ export default function DoctorAppointments() {
   const appointments = useApiQuery(loadAll, "Couldn't load your appointments");
   const [view, setView] = useState<string>("Upcoming");
   const [search, setSearch] = useState("");
+  const [writingFor, setWritingFor] = useState<IDoctorAppointment | null>(null);
   const today = todayDateString();
 
   const refresh = useCallback(() => {
@@ -125,6 +142,16 @@ export default function DoctorAppointments() {
   return (
     <div className="w-full">
       {dialog}
+      {writingFor && (
+        <WriteRecordModal
+          appointment={writingFor}
+          onClose={() => setWritingFor(null)}
+          onSaved={() => {
+            setWritingFor(null);
+            refresh();
+          }}
+        />
+      )}
       <PageHeader title="Appointments" description="Your schedule and visit history." />
 
       <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -185,6 +212,7 @@ export default function DoctorAppointments() {
                     onMessage={() => a.patient && goToTab("messages", { patient: a.patient.id })}
                     onComplete={() => complete(a)}
                     onCancel={() => requestCancel(a)}
+                    onWriteRecord={() => setWritingFor(a)}
                   />
                 ))}
               </ul>

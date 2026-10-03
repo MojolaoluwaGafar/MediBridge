@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bell, CalendarCheck, MessageCircleMore, RefreshCw, XCircle } from "lucide-react";
+import { Bell, CalendarCheck, FileText, MessageCircleMore, RefreshCw, XCircle } from "lucide-react";
 import { useApiQuery } from "../../Hooks/Api/useApiQuery";
 import { usePolling } from "../../Hooks/Portal/usePolling";
 import { usePatientTab } from "../../Hooks/Portal/usePatientTab";
@@ -14,12 +14,14 @@ const ACTIVITY_ICON: Record<Activity["type"], React.ReactNode> = {
   confirmed: <CalendarCheck size={18} />,
   rescheduled: <RefreshCw size={18} />,
   cancelled: <XCircle size={18} />,
+  record: <FileText size={18} />,
 };
 
 const ACTIVITY_TITLE: Record<Activity["type"], string> = {
   confirmed: "Appointment booked",
   rescheduled: "Appointment rescheduled",
   cancelled: "Appointment cancelled",
+  record: "New medical record",
 };
 
 // When the patient last opened the bell, kept per browser and per account so
@@ -90,7 +92,7 @@ export default function NotificationBell({ userId }: Props) {
     setIsOpen((open) => !open);
   };
 
-  const open = (tab: "messages" | "appointments") => {
+  const open = (tab: "messages" | "appointments" | "medRecords") => {
     setIsOpen(false);
     goToTab(tab);
   };
@@ -134,7 +136,7 @@ export default function NotificationBell({ userId }: Props) {
                 <li key={activity._id ?? `${activity.timestamp}-${activity.type}`}>
                   <button
                     type="button"
-                    onClick={() => open("appointments")}
+                    onClick={() => open(activity.type === "record" ? "medRecords" : "appointments")}
                     className="flex w-full items-start gap-3 rounded-md px-3 py-2 text-left hover:bg-gray-50"
                   >
                     <span className="mt-0.5 text-[#605E5E]">{ACTIVITY_ICON[activity.type]}</span>

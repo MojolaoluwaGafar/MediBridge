@@ -97,5 +97,7 @@ AppointmentSchema.index({ userId: 1, status: 1, date: 1 });
 AppointmentSchema.index({ doctor: 1, status: 1, date: 1 });
 // "Has this patient booked with this doctor?" (messages, patient profile):
 AppointmentSchema.index({ doctor: 1, userId: 1 });
+// Hospital-wide counts on the admin overview, and completing past visits.
+AppointmentSchema.index({ status: 1, date: 1 });
 
 export const Appointment = mongoose.model<IAppointment>("Appointment", AppointmentSchema);

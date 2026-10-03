@@ -42,6 +42,8 @@ export interface IDoctorAppointment {
   urgency: IAppointment["urgency"] | null;
   createdAt: string;
   patient: IPatientSummary | null;
+  // This doctor has written a record for the visit.
+  hasRecord: boolean;
 }
 
 export interface IAttentionFlag {
@@ -57,8 +59,10 @@ export interface IAttentionFlag {
 
 export interface IDoctorActivity {
   _id: string;
-  type: "confirmed" | "rescheduled" | "cancelled";
+  type: "confirmed" | "rescheduled" | "cancelled" | "record";
   actor: "patient" | "doctor";
+  // For "record" events, what was added.
+  message: string | null;
   timestamp: string;
   patient: IPatientSummary | null;
   date: string | null;
@@ -96,7 +100,16 @@ export interface IVisitNote {
   createdAt: string;
 }
 
-export type ISharedRecordSummary = Omit<IMedicalRecord, "sections">;
+export type ISharedRecordSummary = Omit<IMedicalRecord, "sections"> & { writtenByYou: boolean };
+
+export type DoctorRecordType = "consultation" | "prescription";
+
+export interface IWriteRecordPayload {
+  type: DoctorRecordType;
+  title: string;
+  summary: string;
+  sections: { heading: string; body: string }[];
+}
 
 export interface IDoctorPatientProfile {
   patient: IPatientSummary & { email: string; phone: string };

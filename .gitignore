@@ -10,3 +10,6 @@ dist-ssr
 .idea
 .vscode/*
 !.vscode/extensions.json
+
+# Medical documents stored on local disk (STORAGE_DRIVER=local); never commit them.
+uploads/

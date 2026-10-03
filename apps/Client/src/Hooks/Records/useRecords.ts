@@ -34,7 +34,9 @@ export function useDownloadRecord(fetchPdf: (record: DownloadableRecord) => Prom
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${record.title}.pdf`;
+      // Staff uploads can be images; name the file after what it really is.
+      const extension = ({ "image/png": "png", "image/jpeg": "jpg" } as Record<string, string>)[blob.type] ?? "pdf";
+      link.download = `${record.title}.${extension}`;
       document.body.appendChild(link);
       link.click();
       link.remove();

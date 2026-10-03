@@ -2,9 +2,16 @@ import { Response } from "express";
 import type { AuthRequest } from "../middlewares/Auth";
 import type { IDoctorDoc } from "../Models/Doctor";
 import * as doctorPortal from "../Services/doctorPortalService";
-import { writeRecordPdf } from "../Services/recordPdf";
+import { sendRecordDownload } from "../Utils/recordDownload";
 import { sendError, sendValidationError } from "../Utils/sendError";
-import { AppointmentListQuery, AvailabilitySchema, DoctorCancelSchema, VisitNoteSchema } from "../Validation/doctorSchema";
+import {
+  AddendumSchema,
+  AppointmentListQuery,
+  AvailabilitySchema,
+  DoctorCancelSchema,
+  VisitNoteSchema,
+  WriteRecordSchema,
+} from "../Validation/doctorSchema";
 
 // Every doctor-portal handler needs the doctor profile linked to the login.
 // An unlinked account gets a 404 with a message the portal shows as is.
@@ -67,13 +74,10 @@ export const getPatientRecord = withDoctor(async (req, res, doctor) => {
   res.status(200).json({ success: true, record });
 });
 
+// The uploaded file when staff attached one, otherwise a generated PDF.
 export const downloadPatientRecordPdf = withDoctor(async (req, res, doctor) => {
-  const { fileName, pdf } = await doctorPortal.getSharedRecordForPdf(doctor, param(req, "id"), param(req, "recordId"));
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
-  // Medical documents must not be kept in shared or browser caches.
-  res.setHeader("Cache-Control", "no-store");
-  writeRecordPdf(pdf, res);
+  const { record, patient } = await doctorPortal.getSharedRecordForDownload(doctor, param(req, "id"), param(req, "recordId"));
+  await sendRecordDownload(req, res, record, patient);
 });
 
 export const addVisitNote = withDoctor(async (req, res, doctor) => {
@@ -82,6 +86,22 @@ export const addVisitNote = withDoctor(async (req, res, doctor) => {
 
   const note = await doctorPortal.addVisitNote(doctor, param(req, "id"), parsed.data.body, parsed.data.appointmentId);
   res.status(201).json({ success: true, message: "Note saved", note });
+});
+
+export const writeRecord = withDoctor(async (req, res, doctor) => {
+  const parsed = WriteRecordSchema.safeParse(req.body ?? {});
+  if (!parsed.success) return sendValidationError(res, parsed.error);
+
+  const record = await doctorPortal.writeRecord(doctor, req.user!.id, param(req, "id"), parsed.data);
+  res.status(201).json({ success: true, message: "Record saved. The patient can now see it.", record });
+});
+
+export const addAddendum = withDoctor(async (req, res, doctor) => {
+  const parsed = AddendumSchema.safeParse(req.body ?? {});
+  if (!parsed.success) return sendValidationError(res, parsed.error);
+
+  const record = await doctorPortal.addAddendum(doctor, param(req, "id"), parsed.data.body);
+  res.status(201).json({ success: true, message: "Addendum added", record });
 });
 
 export const updateAvailability = withDoctor(async (req, res, doctor) => {

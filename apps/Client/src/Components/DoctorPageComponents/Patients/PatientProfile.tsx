@@ -15,6 +15,8 @@ import { formatMessageTime, todayDateString } from "../../../utils/formatDate";
 import { apiErrorMessage } from "../../../utils/apiError";
 import { showToast } from "../../../utils/toastHelper";
 import { useDoctorTab } from "../DoctorTabs";
+import WriteRecordModal from "../Records/WriteRecordModal";
+import AddendumForm from "../Records/AddendumForm";
 import { RecordsSharedChip, SectionCard, StatusChip, UrgencyChip } from "../shared";
 import { dayHeading, hasStarted, mediumDate } from "../../../utils/doctorFormat";
 
@@ -75,28 +77,29 @@ function SharedRecords({
   onView: (record: ISharedRecordSummary) => void;
 }) {
   const { patient, recordsShared, records } = profile;
-
-  if (!recordsShared) {
-    return (
-      <div className="flex flex-col items-center gap-2 px-5 pb-6 pt-4 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EBEAEA] text-[#3E3B3B]">
-          <Lock size={22} />
-        </span>
-        <p className="fontOutfit font-medium">Records not shared</p>
-        <p className="text-sm text-[#605E5E]">
-          {patient.firstname} hasn't shared their medical records with you. Patients choose this when they book; you can
-          ask them to tick “Share medical history” on their next booking.
-        </p>
-      </div>
-    );
-  }
-
   const rows = limit ? records.slice(0, limit) : records;
+
+  // Without sharing, the doctor still sees the records they wrote themselves.
+  const locked = !recordsShared && (
+    <div className="flex flex-col items-center gap-2 px-5 pb-6 pt-4 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#EBEAEA] text-[#3E3B3B]">
+        <Lock size={22} />
+      </span>
+      <p className="fontOutfit font-medium">{records.length ? "Rest of their history not shared" : "Records not shared"}</p>
+      <p className="text-sm text-[#605E5E]">
+        {patient.firstname} hasn't shared their medical records with you
+        {records.length ? ", so you only see the ones you wrote" : ""}. Patients choose this when they book; you can
+        ask them to tick “Share medical history” on their next booking.
+      </p>
+    </div>
+  );
+
   if (rows.length === 0) {
-    return <p className="px-5 pb-5 pt-3 text-sm text-[#757575]">Records are shared, but the hospital hasn't added any yet.</p>;
+    return locked || <p className="px-5 pb-5 pt-3 text-sm text-[#757575]">Records are shared, but none have been added yet.</p>;
   }
 
   return (
+    <>
     <ul className="mt-3 divide-y divide-[#E6E3E3] border-t border-[#E6E3E3]">
       {rows.map((r) => (
         <li key={r._id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
@@ -107,6 +110,7 @@ function SharedRecords({
             <span className="block truncate text-sm font-medium">{r.title}</span>
             <span className="block text-xs text-[#757575]">
               {RECORD_TYPE_LABELS[r.type]} · {mediumDate(String(r.visitDate).slice(0, 10))}
+              {r.writtenByYou && " · written by you"}
             </span>
           </span>
           <button type="button" onClick={() => onView(r)} className="text-sm font-medium text-[#28574E] hover:underline">
@@ -115,6 +119,8 @@ function SharedRecords({
         </li>
       ))}
     </ul>
+    {locked}
+    </>
   );
 }
 
@@ -206,7 +212,8 @@ export default function PatientProfile({ patientId, onBack }: Props) {
   const load = useCallback(() => doctorPortalService.getPatient(patientId), [patientId]);
   const query = useApiQuery(load, "Couldn't load this patient");
   const [tab, setTab] = useState<Tab>("overview");
-  const [openRecord, setOpenRecord] = useState<IMedicalRecord | null>(null);
+  const [openRecord, setOpenRecord] = useState<(IMedicalRecord & { writtenByYou: boolean }) | null>(null);
+  const [writingFor, setWritingFor] = useState<IDoctorAppointment | null>(null);
   const today = todayDateString();
 
   const refresh = useCallback(() => {
@@ -222,7 +229,8 @@ export default function PatientProfile({ patientId, onBack }: Props) {
 
   const viewRecord = async (summary: ISharedRecordSummary) => {
     try {
-      setOpenRecord(await doctorPortalService.getPatientRecord(patientId, summary._id));
+      const record = await doctorPortalService.getPatientRecord(patientId, summary._id);
+      setOpenRecord({ ...record, writtenByYou: summary.writtenByYou });
     } catch (err) {
       showToast(apiErrorMessage(err, "Couldn't open this record"), "error");
     }
@@ -252,9 +260,21 @@ export default function PatientProfile({ patientId, onBack }: Props) {
   const name = `${patient.firstname} ${patient.lastname}`;
 
   const appointmentActions = (a: IDoctorAppointment) => {
-    if (a.status !== "confirmed") return null;
+    const happened = a.status === "completed" || (a.status === "confirmed" && hasStarted(a, today));
+    const writeButton = happened && (
+      <Button
+        type="button"
+        size="sm"
+        width="w-auto"
+        variant="outline"
+        content={a.hasRecord ? "Add another record" : "Write record"}
+        onClick={() => setWritingFor(a)}
+      />
+    );
+    if (a.status !== "confirmed") return writeButton || null;
     return (
       <>
+        {writeButton}
         {hasStarted(a, today) && (
           <Button type="button" size="sm" width="w-auto" content={busyId === a._id ? "Saving…" : "Mark completed"} disabled={busyId === a._id} onClick={() => complete(a)} />
         )}
@@ -282,6 +302,20 @@ export default function PatientProfile({ patientId, onBack }: Props) {
           downloading={downloadingId === openRecord._id}
           onDownload={download}
           onClose={() => setOpenRecord(null)}
+        >
+          {openRecord.writtenByYou && (
+            <AddendumForm recordId={openRecord._id} onAdded={(record) => setOpenRecord({ ...record, writtenByYou: true })} />
+          )}
+        </RecordDetailsModal>
+      )}
+      {writingFor && (
+        <WriteRecordModal
+          appointment={writingFor}
+          onClose={() => setWritingFor(null)}
+          onSaved={() => {
+            setWritingFor(null);
+            refresh();
+          }}
         />
       )}
 
@@ -368,7 +402,7 @@ export default function PatientProfile({ patientId, onBack }: Props) {
                 )
               }
             >
-              <HistoryTable appointments={profile.appointments} today={today} limit={5} />
+              <HistoryTable appointments={profile.appointments} today={today} limit={5} actions={appointmentActions} />
             </SectionCard>
           </div>
 

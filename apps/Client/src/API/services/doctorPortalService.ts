@@ -10,6 +10,7 @@ import type {
   IDoctorPatientRow,
   IDoctorProfile,
   IVisitNote,
+  IWriteRecordPayload,
 } from "../../types/doctorPortal";
 
 // The doctor portal's API (/api/doctor/*). Doctor logins only.
@@ -77,6 +78,16 @@ export const doctorPortalService = {
       appointmentId,
     });
     return data.note;
+  },
+
+  async writeRecord(appointmentId: string, payload: IWriteRecordPayload): Promise<IMedicalRecord> {
+    const { data } = await api.post<{ record: IMedicalRecord }>(`/api/doctor/appointments/${appointmentId}/records`, payload);
+    return data.record;
+  },
+
+  async addAddendum(recordId: string, body: string): Promise<IMedicalRecord> {
+    const { data } = await api.post<{ record: IMedicalRecord }>(`/api/doctor/records/${recordId}/addenda`, { body });
+    return data.record;
   },
 
   async updateAvailability(payload: IAvailabilityPayload): Promise<IAvailabilityRes> {

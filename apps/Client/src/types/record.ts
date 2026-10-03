@@ -28,6 +28,9 @@ export interface IMedicalRecord {
     docImg?: string;
     department: string;
   } | null;
+  // A file hospital staff uploaded (lab result, scan, discharge papers).
+  // Downloading the record returns this file instead of a generated PDF.
+  attachment?: { contentType: string; bytes: number; originalName: string } | null;
   createdAt: string;
 }
 

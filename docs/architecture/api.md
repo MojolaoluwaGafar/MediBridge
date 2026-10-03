@@ -153,10 +153,14 @@ who booked them; anything else is 404.
 | GET    | `/api/doctor/patients/:id/records/:recordId` | One shared record with its sections |
 | GET    | `/api/doctor/patients/:id/records/:recordId/pdf` | Shared record as a PDF (`Cache-Control: no-store`) |
 | POST   | `/api/doctor/patients/:id/notes` | Body: `{ body, appointmentId? }`. A private note only this doctor sees |
+| POST   | `/api/doctor/appointments/:id/records` | Write a record for a visit that has taken place. Body: `{ type: "consultation" | "prescription", title, summary?, sections: [{ heading, body }] }` (empty sections are dropped). The patient sees it immediately and gets a "record" activity |
+| POST   | `/api/doctor/records/:id/addenda` | Body: `{ body }`. Records the doctor wrote can't be edited; this appends a dated "Addendum" section and tells the patient |
 | PUT    | `/api/doctor/availability` | Body: `{ availability, availableTime: [{ day, start, end }] }`. Blocks on a day can't overlap and need at least one slot. Returns the profile and `outsideHours`: booked visits that no longer fit (they stay booked) |
 
 Records are shared when the patient ticked "share records" on a booking with
-this doctor that isn't cancelled. The doctor also uses `/api/conversations`
+this doctor that isn't cancelled. A doctor always sees the records they wrote
+themselves. Doctors write consultation notes and prescriptions; lab results,
+imaging and discharge summaries are uploaded by hospital staff (admin portal). The doctor also uses `/api/conversations`
 (messages), `PATCH /api/appointment/:id/urgency` and `/api/flags`.
 
 To try the portal locally: `npm run seed:demo-doctor -w @medibridge/server -- --yes`
@@ -164,33 +168,56 @@ creates a demo doctor (`DEMO-DOC-01`) with sample patients, visits, records,
 messages and flags, all on `@demo.medibridge.test` addresses. It refuses to run
 with `NODE_ENV=production`.
 
-## Admin
+## Admin portal — `/api/admin`
 
-| Method | Path                               | Auth  | Purpose |
-| ------ | ---------------------------------- | ----- | ------- |
-| GET    | `/api/admin/doctors`               | Admin | Every doctor profile and its linked login: `{ id, name, department, account: { id, userId, email } | null }[]` |
-| PUT    | `/api/admin/doctors/:id/account`   | Admin | Link a login to the doctor profile. Body: `{ account }` (User ID or email). Sets that login's role to `doctor`; the previous linked login goes back to `user` |
-| DELETE | `/api/admin/doctors/:id/account`   | Admin | Unlink. The login goes back to the `user` role |
+Admin logins only. The portal is at `/adminDashboard`.
 
-Until the admin portal exists, use the script, which calls the same code:
+Nobody's password is set by an admin. Patients, doctor logins and admin
+accounts are **pre-registered** (ID, name, email, phone), and each person
+activates their own account on the Activate Account page: a code goes to their
+email and phone, and they choose a password. IDs left empty are generated
+(`P`, `D` or `A` plus six digits).
 
-```powershell
-npm run link:doctor -w @medibridge/server -- --list
-npm run link:doctor -w @medibridge/server -- --doctor "Dr. Elizabeth" --account D001
-```
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| GET    | `/api/admin/overview` | Hospital-wide counts: patients (active / not activated), doctors (with login, taking bookings), departments (`unstaffed`: no doctor taking bookings), appointments, open safety flags, records this week |
+| GET    | `/api/admin/patients?q=&page=` | Patients, 25 a page, newest first. `q` matches name, email or the start of the patient ID |
+| POST   | `/api/admin/patients` | Register a patient. Body: `{ userId?, firstname, lastname, email, phone }`. 409 with `errors[0].field` when the ID, email or phone is taken |
+| GET    | `/api/admin/patients/:id` | Patient, their appointments and records (`uploadedByStaff` marks removable uploads) |
+| PATCH  | `/api/admin/patients/:id` | Correct name, email or phone (patients can't change these themselves) |
+| POST   | `/api/admin/patients/:id/records` | Upload a document (multipart): `file` (PDF, JPG or PNG, max 10 MB, checked by content) plus `type` (`lab_result`, `imaging`, `discharge_summary`), `title`, `department`, `visitDate`, `summary?`. The patient is notified |
+| GET    | `/api/admin/patients/:id/records/:recordId/file` | Download a record (the uploaded file, or a generated PDF) |
+| DELETE | `/api/admin/records/:id` | Remove a staff upload (wrong patient or wrong file). Records doctors wrote can't be removed; they're corrected with an addendum. Logged for audit |
+| GET    | `/api/admin/doctors` | Every doctor with hours, upcoming appointment count and linked login (`activated`) |
+| POST   | `/api/admin/doctors` | Add a doctor profile. Body: `{ docName, department, YOE, gender, about?, availability?, availableTime? }` |
+| PATCH  | `/api/admin/doctors/:id` | Edit the profile (name, department, taking bookings on or off) |
+| PUT    | `/api/admin/doctors/:id/availability` | Weekly hours, same rules and `outsideHours` warning as `PUT /api/doctor/availability` |
+| POST   | `/api/admin/doctors/:id/photo` | Profile photo (multipart `photo`, JPG/PNG/WebP, max 2 MB) |
+| POST   | `/api/admin/doctors/:id/login` | Create the doctor's login (not yet activated) and link it. Body as for patients |
+| PUT    | `/api/admin/doctors/:id/account` | Link an existing login. Body: `{ account }` (User ID or email). Sets its role to `doctor`; the previous login goes back to `user` |
+| DELETE | `/api/admin/doctors/:id/account` | Unlink. The login goes back to the `user` role |
+| GET    | `/api/admin/departments` | Departments with live `doctors` and `acceptingDoctors` counts |
+| POST   | `/api/admin/departments` | Add one. Body: `{ field, category, summary, icon, overview, services[] }` |
+| PATCH  | `/api/admin/departments/:id` | Edit. Renaming moves its doctors; past appointments and records keep the old name |
+| GET / POST | `/api/admin/admins` | List or pre-register admin accounts |
 
-Role changes take effect the next time the person signs in.
+Safety flags use `/api/flags` (above). Role changes take effect the next time
+the person signs in. `npm run link:doctor` still works for linking from the
+command line.
+
+**Document storage.** Uploads go to Cloudinary as private ("authenticated")
+files with no public URL; the API fetches each one with a one-minute signed
+link and streams it only to people allowed to see the record.
+`STORAGE_DRIVER=local` keeps files on disk instead (development and tests;
+Render's disk is wiped on every deploy). Where a file is stored is never sent
+to the browser.
 
 ## Not built yet
 
-- The admin portal. Sign-in sends admins to `/adminDashboard` (a placeholder);
-  link doctor logins with the admin endpoints or `npm run link:doctor`.
-- Endpoints for doctors to write medical records (doctors can keep private
-  visit notes, but records still come from the hospital).
 - Real-time message delivery. The portal checks for new messages every 10
   seconds while a conversation is open.
-- Admin create, update and delete endpoints for doctors, patients and
-  departments.
+- Deleting patients, doctors or departments. Left out on purpose: their medical
+  history must be kept. Turn off a doctor's bookings instead.
 
 ## Rate limits
 

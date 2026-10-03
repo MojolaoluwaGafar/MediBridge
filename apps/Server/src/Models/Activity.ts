@@ -7,7 +7,8 @@ import mongoose from "mongoose";
 // Events recorded before the doctor portal have no `doctor` or `appointment`.
 const ActivitySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  type: { type: String, enum: ["confirmed", "rescheduled", "cancelled"], required: true },
+  // "record": a doctor added a medical record (or an addendum) for the patient.
+  type: { type: String, enum: ["confirmed", "rescheduled", "cancelled", "record"], required: true },
   message: { type: String, required: true },
   doctor: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor" },
   appointment: { type: mongoose.Schema.Types.ObjectId, ref: "Appointment" },

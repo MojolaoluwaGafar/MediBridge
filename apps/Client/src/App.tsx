@@ -26,7 +26,7 @@ const AboutPage = lazyPage(() => import('./Pages/AboutPage'))
 const PrivacyPage = lazyPage(() => import('./Pages/PrivacyPage'))
 const TermsPage = lazyPage(() => import('./Pages/TermsPage'))
 const ContactPage = lazyPage(() => import('./Pages/ContactPage'))
-const PortalComingSoon = lazyPage(() => import('./Pages/PortalComingSoon'))
+const AdminPage = lazyPage(() => import('./Pages/AdminPage'))
 const Error404 = lazyPage(() => import('./Components/Error404'))
 const UnderConstruction = lazyPage(() => import("./Components/UnderConstruction"))
 
@@ -52,8 +52,7 @@ function App() {
       <Route path="/support" element={<SupportPage />} />
       <Route path='/patientDashboard' element={<ProtectRoute roles={["user"]}><PatientPage /></ProtectRoute>} />
       <Route path='/doctorDashboard' element={<ProtectRoute roles={["doctor"]}><DoctorPage /></ProtectRoute>} />
-      {/* Placeholder until the admin portal is built. */}
-      <Route path='/adminDashboard' element={<ProtectRoute roles={["admin"]}><PortalComingSoon portal="Admin" /></ProtectRoute>} />
+      <Route path='/adminDashboard' element={<ProtectRoute roles={["admin"]}><AdminPage /></ProtectRoute>} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/contact" element={<ContactPage />} />

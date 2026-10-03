@@ -25,6 +25,17 @@ export interface IRecordSection {
   body: string;
 }
 
+// A file hospital staff uploaded (lab result, scan, discharge papers). The
+// bytes live in private storage (see Services/documentStorage.ts); `key` is
+// only usable with the server's credentials and is never sent to clients.
+export interface IRecordAttachment {
+  provider: "cloudinary" | "local";
+  key: string;
+  contentType: string;
+  bytes: number;
+  originalName: string;
+}
+
 // A clinical record written by the hospital about one patient. Patients can
 // read and download their own records but never create or change them.
 export interface IMedicalRecord extends Document {
@@ -39,6 +50,7 @@ export interface IMedicalRecord extends Document {
   // Headed sections ("Presenting complaint", "Plan", ...) so each record type
   // can have its own structure without schema changes.
   sections: IRecordSection[];
+  attachment?: IRecordAttachment;
   createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -61,11 +73,28 @@ const MedicalRecordSchema = new Schema<IMedicalRecord>(
         body: { type: String, required: true, trim: true },
       },
     ],
+    attachment: {
+      type: {
+        _id: false,
+        provider: { type: String, enum: ["cloudinary", "local"], required: true },
+        key: { type: String, required: true },
+        contentType: { type: String, required: true },
+        bytes: { type: Number, required: true },
+        originalName: { type: String, required: true },
+      },
+      default: undefined,
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
 
 MedicalRecordSchema.index({ patient: 1, visitDate: -1 });
+// Records a doctor wrote, and which visits already have one.
+MedicalRecordSchema.index({ doctor: 1, patient: 1 });
+MedicalRecordSchema.index({ appointment: 1 }, { sparse: true });
+
+// What clients may see of a record: everything except where its file is kept.
+export const RECORD_PUBLIC_PROJECTION = { "attachment.key": 0, "attachment.provider": 0 } as const;
 
 export const MedicalRecord = mongoose.model<IMedicalRecord>("MedicalRecord", MedicalRecordSchema);

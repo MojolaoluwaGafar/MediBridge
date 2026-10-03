@@ -53,6 +53,34 @@ export const VisitNoteSchema = z.object({
   appointmentId: z.string().optional(),
 });
 
+// Records a doctor writes after a visit. Lab results, imaging and discharge
+// summaries come from other departments and are uploaded by hospital staff.
+export const DOCTOR_RECORD_TYPES = ["consultation", "prescription"] as const;
+
+const recordSection = z.object({
+  heading: z.string().trim().min(1, "Each section needs a heading").max(80, "Section headings can be up to 80 characters"),
+  body: z.string().trim().max(5000, "Each section can be up to 5000 characters"),
+});
+
+export const WriteRecordSchema = z.object({
+  type: z.enum(DOCTOR_RECORD_TYPES, "Choose consultation notes or a prescription"),
+  title: z.string().trim().min(1, "Give the record a title").max(150, "Titles can be up to 150 characters"),
+  summary: z.string().trim().max(2000, "The summary can be up to 2000 characters").optional().default(""),
+  // Empty sections from the form's template are dropped; at least one must
+  // have something in it.
+  sections: z
+    .array(recordSection)
+    .max(12, "That's more sections than a record needs")
+    .transform((sections) => sections.filter((s) => s.body))
+    .refine((sections) => sections.length > 0, "Fill in at least one section"),
+});
+
+export type WriteRecordInput = z.infer<typeof WriteRecordSchema>;
+
+export const AddendumSchema = z.object({
+  body: z.string().trim().min(1, "Write the addendum before saving").max(3000, "Addenda can be up to 3000 characters"),
+});
+
 export const APPOINTMENT_VIEWS = ["upcoming", "today", "completed", "cancelled", "all"] as const;
 
 export const AppointmentListQuery = z.object({

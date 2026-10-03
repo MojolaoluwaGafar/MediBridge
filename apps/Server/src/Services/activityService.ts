@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Activity } from "../Models/Activity";
 
-export type ActivityType = "confirmed" | "rescheduled" | "cancelled";
+export type ActivityType = "confirmed" | "rescheduled" | "cancelled" | "record";
 
 // What an activity is about, so it also shows in the doctor's feed.
 export interface ActivityLink {

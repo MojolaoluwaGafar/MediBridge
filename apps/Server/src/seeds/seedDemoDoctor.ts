@@ -26,6 +26,7 @@ dotenv.config();
 
 const DOMAIN = "demo.medibridge.test";
 const DOCTOR_USER_ID = "DEMO-DOC-01";
+const ADMIN_USER_ID = "DEMO-ADMIN-01";
 
 const PATIENTS = [
   { UserId: "DEMO-P01", FirstName: "Chioma", LastName: "Nwosu", phone: "08090000101" },
@@ -100,6 +101,18 @@ async function seed() {
     isActive: true,
   });
 
+  await User.create({
+    UserId: ADMIN_USER_ID,
+    FirstName: "Bola",
+    LastName: "Admin",
+    Email: `admin@${DOMAIN}`,
+    PhoneNumber: "08090000199",
+    RegisteredNumber: "08090000199",
+    Password: hash,
+    role: "admin",
+    isActive: true,
+  });
+
   const doctor = await Doctor.create({
     docName: "Dr. Adaeze Okafor",
     department: "Cardiology",
@@ -136,7 +149,9 @@ async function seed() {
   const today = todayInHospital();
   // Today's times are set around "now", so the schedule always has visits
   // that are done, one that's next, and some still to come.
-  const nowSlot = Math.floor(minutesNowInHospital() / 30) * 30;
+  // Kept between 2:00 AM and 9:00 PM so every visit (-2h to +2.5h) lands on
+  // its own slot the same day, whatever time the seed runs.
+  const nowSlot = Math.min(Math.max(Math.floor(minutesNowInHospital() / 30) * 30, 120), 21 * 60);
   const at = (offsetMinutes: number) => formatTimeLabel(Math.min(Math.max(nowSlot + offsetMinutes, 0), 23 * 60 + 30));
   const routine = { level: "routine", reason: "No urgent signs", source: "keyword", updatedAt: new Date() };
   const urgent = (reason: string) => ({ level: "urgent", reason, source: "keyword+ai", updatedAt: new Date() });
@@ -223,6 +238,7 @@ async function seed() {
 
   console.log("\nDemo doctor ready.");
   console.log(`  Doctor login:  User ID ${DOCTOR_USER_ID}   password ${password}`);
+  console.log(`  Admin login:   User ID ${ADMIN_USER_ID}   password ${password}`);
   console.log(`  Patient logins (same password): ${PATIENTS.map((p) => p.UserId).join(", ")}`);
 }
 

@@ -9,6 +9,7 @@ import {
   Users,
   CalendarCheck,
   XCircle,
+  FileText,
 } from "lucide-react";
 import DashboardGreeting from "../../PatientPageComponents/DashBoard/DashboardGreeting";
 import EmptyState from "../../PortalComponents/EmptyState";
@@ -124,11 +125,13 @@ const ACTIVITY_ICON: Record<IDoctorActivity["type"], ReactNode> = {
   confirmed: <CalendarCheck size={18} />,
   rescheduled: <RefreshCw size={18} />,
   cancelled: <XCircle size={18} />,
+  record: <FileText size={18} />,
 };
 
 function activityText(a: IDoctorActivity) {
   const who = a.patient ? `${a.patient.firstname} ${a.patient.lastname}` : "A patient";
   const when = a.date ? `${shortDate(a.date)}${a.time ? `, ${a.time}` : ""}` : "";
+  if (a.type === "record") return `You added a record for ${who}${a.message ? `: ${a.message.replace(/^.*?: /, "")}` : ""}.`;
   if (a.actor === "doctor") return `You cancelled ${who}'s appointment${when ? ` for ${when}` : ""}.`;
   if (a.type === "confirmed") return `${who} booked an appointment${when ? ` for ${when}` : ""}.`;
   if (a.type === "rescheduled") return `${who} rescheduled to ${when || "a new time"}.`;

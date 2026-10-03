@@ -3,7 +3,7 @@ import { Plus, TriangleAlert, X } from "lucide-react";
 import PageHeader from "../../PortalComponents/PageHeader";
 import Button from "../../Button";
 import { doctorPortalService } from "../../../API/services/doctorPortalService";
-import type { IDoctorAppointment, IDoctorProfile, IWorkingWindow } from "../../../types/doctorPortal";
+import type { IAvailabilityPayload, IDoctorAppointment, IDoctorProfile, IWorkingWindow } from "../../../types/doctorPortal";
 import { apiErrorMessage } from "../../../utils/apiError";
 import { showToast } from "../../../utils/toastHelper";
 import { minutesOf, patientName, shortDate } from "../../../utils/doctorFormat";
@@ -47,11 +47,18 @@ function dayProblem(blocks: Block[], slotMinutes: number): string | null {
 }
 
 type Props = {
-  doctor: IDoctorProfile;
+  doctor: Pick<IDoctorProfile, "availability" | "availableTime"> & { slotMinutes?: number };
   onSaved: (doctor: IDoctorProfile) => void;
+  // The admin portal edits a doctor's hours through its own endpoint and
+  // wording; the doctor portal uses the defaults.
+  save?: (payload: IAvailabilityPayload) => Promise<{ doctor: IDoctorProfile; outsideHours: IDoctorAppointment[] }>;
+  title?: string;
+  description?: string;
 };
 
-export default function Availability({ doctor, onSaved }: Props) {
+const saveOwnHours = (payload: IAvailabilityPayload) => doctorPortalService.updateAvailability(payload);
+
+export default function Availability({ doctor, onSaved, save: saveHours = saveOwnHours, title = "Availability", description }: Props) {
   const [accepting, setAccepting] = useState(doctor.availability);
   const [week, setWeek] = useState<Week>(() => toWeek(doctor.availableTime));
   const [saving, setSaving] = useState(false);
@@ -87,7 +94,7 @@ export default function Availability({ doctor, onSaved }: Props) {
   const save = async () => {
     setSaving(true);
     try {
-      const result = await doctorPortalService.updateAvailability({ availability: accepting, availableTime: toWindows(week) });
+      const result = await saveHours({ availability: accepting, availableTime: toWindows(week) });
       setOutsideHours(result.outsideHours);
       showToast("Availability saved", "success");
       onSaved(result.doctor);
@@ -116,8 +123,8 @@ export default function Availability({ doctor, onSaved }: Props) {
   return (
     <div className="w-full space-y-6">
       <PageHeader
-        title="Availability"
-        description={`Set the hours patients can book you. Each appointment is ${slotMinutes} minutes.`}
+        title={title}
+        description={description ?? `Set the hours patients can book you. Each appointment is ${slotMinutes} minutes.`}
         action={
           <div className="flex gap-2">
             {dirty && (
@@ -150,7 +157,7 @@ export default function Availability({ doctor, onSaved }: Props) {
           <p className="fontOutfit font-medium">Accepting new bookings</p>
           <p className="text-sm text-[#605E5E]">
             {accepting
-              ? `Patients can book any free slot in your hours (${slotsPerWeek} slot${slotsPerWeek === 1 ? "" : "s"} a week).`
+              ? `Patients can book any free slot in these hours (${slotsPerWeek} slot${slotsPerWeek === 1 ? "" : "s"} a week).`
               : "Patients can't book new appointments with you. Existing appointments are kept."}
           </p>
         </div>

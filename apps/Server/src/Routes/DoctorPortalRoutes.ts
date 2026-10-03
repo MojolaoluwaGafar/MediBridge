@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware, requireRole } from "../middlewares/Auth";
 import {
+  addAddendum,
   addVisitNote,
   cancelAppointment,
   completeAppointment,
@@ -12,6 +13,7 @@ import {
   getPatientRecord,
   getPatients,
   updateAvailability,
+  writeRecord,
 } from "../controller/DoctorPortalController";
 
 const router = Router();
@@ -24,6 +26,8 @@ router.get("/doctor/dashboard", getDashboard);
 router.get("/doctor/appointments", getAppointments);
 router.patch("/doctor/appointments/:id/complete", completeAppointment);
 router.patch("/doctor/appointments/:id/cancel", cancelAppointment);
+router.post("/doctor/appointments/:id/records", writeRecord);
+router.post("/doctor/records/:id/addenda", addAddendum);
 router.get("/doctor/patients", getPatients);
 router.get("/doctor/patients/:id", getPatient);
 router.get("/doctor/patients/:id/records/:recordId", getPatientRecord);

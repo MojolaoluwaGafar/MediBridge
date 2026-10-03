@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { X, Download } from "lucide-react";
+import { useEffect, type ReactNode } from "react";
+import { X, Download, Paperclip } from "lucide-react";
 import Button from "../../Button";
 import { RECORD_TYPE_LABELS, type IMedicalRecord } from "../../../types/record";
 import { formatLongDate } from "../../../utils/formatDate";
@@ -9,9 +9,11 @@ type Props = {
   downloading: boolean;
   onDownload: (record: IMedicalRecord) => void;
   onClose: () => void;
+  // Extra content above the buttons, e.g. the doctor's addendum form.
+  children?: ReactNode;
 };
 
-export default function RecordDetailsModal({ record, downloading, onDownload, onClose }: Props) {
+export default function RecordDetailsModal({ record, downloading, onDownload, onClose, children }: Props) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     document.addEventListener("keydown", onKeyDown);
@@ -21,7 +23,7 @@ export default function RecordDetailsModal({ record, downloading, onDownload, on
   const details: [string, string][] = [
     ["Date of visit", formatLongDate(record.visitDate)],
     ["Department", record.department],
-    ["Doctor", record.doctor?.docName ?? "Not recorded"],
+    record.doctor ? ["Doctor", record.doctor.docName] : ["Added by", record.attachment ? "Hospital records office" : "Not recorded"],
     ["Record type", RECORD_TYPE_LABELS[record.type]],
   ];
 
@@ -60,13 +62,29 @@ export default function RecordDetailsModal({ record, downloading, onDownload, on
               <p className="whitespace-pre-line text-[#141313]">{record.summary}</p>
             </section>
           )}
-          {record.sections.map((section) => (
-            <section key={section.heading}>
+          {record.attachment && (
+            <section className="flex items-center gap-3 rounded-lg border border-[#D9D9D9] p-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E0F8F3] text-[#28574E]">
+                <Paperclip size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{record.attachment.originalName}</span>
+                <span className="block text-xs text-[#757575]">
+                  {record.attachment.contentType === "application/pdf" ? "PDF" : "Image"} ·{" "}
+                  {Math.max(1, Math.round(record.attachment.bytes / 1024))} KB · uploaded by the hospital
+                </span>
+              </span>
+            </section>
+          )}
+          {record.sections.map((section, index) => (
+            <section key={index}>
               <h3 className="fontOutfit font-medium text-[#28574E]">{section.heading}</h3>
               <p className="whitespace-pre-line text-[#141313]">{section.body}</p>
             </section>
           ))}
         </div>
+
+        {children}
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button type="button" size="sm" variant="outline" width="w-full sm:w-32" content="Close" onClick={onClose} />
@@ -79,7 +97,7 @@ export default function RecordDetailsModal({ record, downloading, onDownload, on
             content={
               <>
                 <Download size={16} />
-                {downloading ? "Saving…" : "Download PDF"}
+                {downloading ? "Saving…" : record.attachment ? "Download file" : "Download PDF"}
               </>
             }
           />
